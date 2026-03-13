@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  role      String   // "DEV" | "QA"
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  votes             Vote[]
+  ticketAssignments  TicketAssignment[]
+  timeOffs           TimeOff[]
+}
+
+model Sprint {
+  id        String   @id @default(cuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+
+  estimationSessions EstimationSession[]
+  tickets            Ticket[]
+}
+
+model Ticket {
+  id                String   @id @default(cuid())
+  externalId        String?
+  externalUrl       String?
+  title             String
+  description       String?
+  acceptanceCriteria String?
+  storyPoints       Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  sprintId String?
+  sprint   Sprint? @relation(fields: [sprintId], references: [id])
+
+  votes              Vote[]
+  ticketAssignments  TicketAssignment[]
+  estimationSessions EstimationSession[] @relation("ActiveTicket")
+}
+
+model EstimationSession {
+  id        String   @id @default(cuid())
+  status    String   @default("VOTING") // "VOTING" | "REVEALED" | "COMPLETED"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sprintId String
+  sprint   Sprint @relation(fields: [sprintId], references: [id])
+
+  activeTicketId String?
+  activeTicket   Ticket? @relation("ActiveTicket", fields: [activeTicketId], references: [id])
+}
+
+model Vote {
+  id          String   @id @default(cuid())
+  devEffort   Int
+  qaEffort    Int
+  risk        Int
+  uncertainty Int
+  createdAt   DateTime @default(now())
+
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ticketId])
+}
+
+model TicketAssignment {
+  id           String   @id @default(cuid())
+  startDate    DateTime
+  durationDays Int
+  type         String   // "DEV" | "QA"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  parentAssignmentId String?
+  parentAssignment   TicketAssignment?  @relation("DevQaDependency", fields: [parentAssignmentId], references: [id])
+  childAssignments   TicketAssignment[] @relation("DevQaDependency")
+}
+
+model TimeOff {
+  id   String   @id @default(cuid())
+  date DateTime
+  type String   // "VACATION" | "SICK_LEAVE" | "HOLIDAY"
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
