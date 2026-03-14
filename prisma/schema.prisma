@@ -8,16 +8,46 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  role      String   // "DEV" | "QA"
-  isAdmin   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  login        String   @unique
+  passwordHash String
+  name         String
+  role         String   // "DEV" | "QA" | "SCRUM_MASTER"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  votes             Vote[]
-  ticketAssignments  TicketAssignment[]
-  timeOffs           TimeOff[]
+  votes            Vote[]
+  ticketAssignments TicketAssignment[]
+  timeOffs         TimeOff[]
+  ownedProjects    Project[]       @relation("OwnedProjects")
+  memberships      ProjectMember[]
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  inviteToken String   @unique @default(cuid())
+  createdAt   DateTime @default(now())
+
+  ownerId String
+  owner   User   @relation("OwnedProjects", fields: [ownerId], references: [id])
+
+  members            ProjectMember[]
+  sprints            Sprint[]
+  tickets            Ticket[]
+  estimationSessions EstimationSession[]
+}
+
+model ProjectMember {
+  id       String   @id @default(cuid())
+  joinedAt DateTime @default(now())
+
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
+  @@unique([userId, projectId])
 }
 
 model Sprint {
@@ -27,20 +57,27 @@ model Sprint {
   endDate   DateTime
   createdAt DateTime @default(now())
 
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
   estimationSessions EstimationSession[]
   tickets            Ticket[]
 }
 
 model Ticket {
-  id                String   @id @default(cuid())
-  externalId        String?
-  externalUrl       String?
-  title             String
-  description       String?
-  acceptanceCriteria String?
-  storyPoints       Int?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  externalId          String?
+  externalUrl         String?
+  title               String
+  description         String?
+  acceptanceCriteria  String?
+  storyPoints         Int?
+  devEffortProportion Float?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
 
   sprintId String?
   sprint   Sprint? @relation(fields: [sprintId], references: [id])
@@ -56,8 +93,11 @@ model EstimationSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sprintId String
-  sprint   Sprint @relation(fields: [sprintId], references: [id])
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
+
+  sprintId String?
+  sprint   Sprint? @relation(fields: [sprintId], references: [id])
 
   activeTicketId String?
   activeTicket   Ticket? @relation("ActiveTicket", fields: [activeTicketId], references: [id])

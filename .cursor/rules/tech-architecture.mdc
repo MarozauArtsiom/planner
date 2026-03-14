@@ -10,6 +10,7 @@ alwaysApply: true
 - **Фреймворк:** Next.js (App Router).
 - **Язык:** TypeScript (Strict mode).
 - **База данных / ORM:** Prisma ORM.
+- **Авторизация:** bcryptjs — хеширование паролей, httpOnly cookie сессия.
 - **Стейт-менеджер (Client):** Zustand — хранение оптимистичного стейта при drag-and-drop у Скрам-мастера.
 - **UI & Drag-and-Drop:** @dnd-kit/core — легковесная либа для сложных кастомных Гант-сеток.
 - **Даты:** date-fns — пропуск выходных и отпусков.
@@ -21,109 +22,49 @@ alwaysApply: true
 - **Local:** SQLite (файл `dev.db`, работает мгновенно из коробки).
 - **Production:** @vercel/postgres (Serverless SQL).
 
-## 3. Real-time Architecture (Vercel Serverless Workaround)
+## 3. Auth Strategy
+
+- **Хеширование:** bcryptjs (10 rounds). Пароль хранится как `passwordHash` в модели User.
+- **Сессия:** httpOnly cookie `userId`, maxAge 1 год. Server Actions `login`/`register`/`logout`.
+- **Proxy (middleware):** Незалогиненные пользователи редиректятся на `/login`. Публичные маршруты: `/login`, `/register`, `/invite`.
+- **Redirect after login:** Query param `?redirect=` сохраняет целевой URL (например, invite-ссылку) через login/register flow.
+
+## 4. Real-time Architecture (Vercel Serverless Workaround)
 
 Serverless-функции на Vercel не держат долгие WebSocket-соединения — используем HTTP Polling.
 
 - **Решение:** SWR или React Query.
-- **Как это работает:** Браузеры «Зрителей» раз в 1-2 секунды дергают легковесный GET-эндпоинт `/api/board/state`. Скрам-мастер отправляет POST (Server Action), мутирует базу, и при следующем поллинге через секунду все участники видят новую картину. Этого достаточно для ощущения real-time.
+- **Как это работает:** Браузеры «Зрителей» раз в 1-2 секунды дергают легковесный GET-эндпоинт `/api/estimation/session?projectId=X`. Скрам-мастер отправляет POST (Server Action), мутирует базу, и при следующем поллинге через секунду все участники видят новую картину. Этого достаточно для ощущения real-time.
 
-## 4. Архитектура Базы Данных (Prisma Schema)
+## 5. Архитектура Базы Данных (Prisma Schema)
 
-```prisma
-datasource db {
-  provider  = env("DATABASE_PROVIDER") // 'sqlite' or 'postgresql'
-  url       = env("DATABASE_URL")
-}
+### Ключевые модели
 
-generator client {
-  provider = "prisma-client-js"
-}
+- **User** — login/passwordHash для авторизации, глобальная роль (DEV/QA/SCRUM_MASTER).
+- **Project** — корневая сущность. Содержит `inviteToken` (unique, reusable) для invite-ссылок. `ownerId` — SM, создавший проект.
+- **ProjectMember** — связь User ↔ Project. Unique constraint `[userId, projectId]`.
+- **Sprint, Ticket, EstimationSession** — привязаны к Project через `projectId`.
+- **TicketAssignment** — отделен от Ticket, поддержка Dev/QA ассайнментов на разных людей. `parentAssignmentId` для Finish-to-Start зависимости.
+- **Vote** — unique per `[userId, ticketId]`.
 
-model User {
-  id          String       @id @default(cuid())
-  name        String
-  role        Role         // DEV | QA | SCRUM_MASTER
-  assignments Assignment[]
-  votes       Vote[]
-  timeOffs    TimeOff[]
-}
-
-enum Role {
-  DEV
-  QA
-  SCRUM_MASTER
-}
-
-model Sprint {
-  id        String   @id @default(cuid())
-  name      String   // "Sprint 45"
-  startDate DateTime // Всегда Среда
-  endDate   DateTime // Всегда Вторник
-}
-
-model Ticket {
-  id                  String       @id @default(cuid())
-  externalId          String       // "PROJ-123"
-  title               String
-  description         String?
-  recommendedSp       Int?
-  devEffortProportion Float?       // Пропорция для отрисовки (например, 0.6)
-  assignments         Assignment[]
-  votes               Vote[]
-}
-
-model Assignment {
-  id           String   @id @default(cuid())
-  ticketId     String
-  ticket       Ticket   @relation(fields: [ticketId], references: [id])
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
-  type         PartType // DEV_PART или QA_PART
-  startDate    DateTime
-  durationDays Int
-  subRowIndex  Int      @default(0) // Индекс подстроки для параллельных задач
-}
-
-enum PartType {
-  DEV_PART
-  QA_PART
-}
-
-model TimeOff {
-  id     String   @id @default(cuid())
-  userId String
-  user   User     @relation(fields: [userId], references: [id])
-  date   DateTime
-  type   String   // "VACATION" | "SICK_LEAVE"
-}
-
-model Session {
-  id              String  @id @default(cuid())
-  activeTicketId  String?
-  status          String  // "VOTING" | "DISCUSSING"
-}
-
-model Vote {
-  id               String @id @default(cuid())
-  userId           String
-  user             User   @relation(fields: [userId], references: [id])
-  ticketId         String
-  ticket           Ticket @relation(fields: [ticketId], references: [id])
-  devEffortScore   Int
-  qaEffortScore    Int
-  riskScore        Int
-  uncertaintyScore Int
-}
-```
-
-### Ключевые решения схемы
+### Ключевые решения
 
 - **Assignment отделен от Ticket** — одна задача может иметь Dev-ассайнмент и QA-ассайнмент на разных людей.
-- **subRowIndex** — поддержка параллельных задач у одного человека (Multi-row Assigning). Если задачи пересекаются, каждая получает свой `subRowIndex` для визуального разведения.
-- **Role включает SCRUM_MASTER** — эксклюзивные права на редактирование Ганта, создание спринтов, управление отпусками.
+- **Role глобальная** — выбирается при регистрации. SM может создавать проекты.
+- **inviteToken на Project** — без отдельной таблицы. Перегенерация инвалидирует старую ссылку.
 
-## 5. Логика диаграммы Ганта
+## 6. Маршрутизация
+
+- `/register` — регистрация (name, login, password, role)
+- `/login` — вход (login, password)
+- `/` — список проектов пользователя
+- `/project/[id]` — Board проекта (Gantt)
+- `/project/[id]/estimation` — сессия оценки
+- `/project/[id]/settings` — настройки проекта (invite link)
+- `/invite/[token]` — присоединение к проекту
+- `/settings` — профиль пользователя
+
+## 7. Логика диаграммы Ганта
 
 - **Optimistic UI:** При drag/resize Скрам-мастер видит мгновенный результат через Zustand. Параллельно Server Action сохраняет в БД. При ошибке сервера — откат UI.
 - **SP -> длительность:** 1 SP = 2 дня, 2 SP = 3 дня, 3 SP = 5 дней. Ручной resize перезаписывает расчетную длину.
