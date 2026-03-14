@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { hasSmRights } from "@/lib/permissions";
 
 async function requireUser() {
   const userId = await getSession();
@@ -14,7 +15,7 @@ async function requireUser() {
 
 export async function createProject(formData: FormData) {
   const user = await requireUser();
-  if (user.role !== "SCRUM_MASTER") {
+  if (!user.isScrumMaster) {
     return { error: "Только Scrum Master может создавать проекты" };
   }
 
@@ -25,7 +26,7 @@ export async function createProject(formData: FormData) {
     data: {
       name,
       ownerId: user.id,
-      members: { create: { userId: user.id } },
+      members: { create: { userId: user.id, isScrumMaster: true } },
     },
   });
 
@@ -35,11 +36,11 @@ export async function createProject(formData: FormData) {
 export async function regenerateInviteToken(projectId: string) {
   const user = await requireUser();
 
-  const project = await prisma.project.findUnique({
-    where: { id: projectId },
+  const membership = await prisma.projectMember.findUnique({
+    where: { userId_projectId: { userId: user.id, projectId } },
   });
-  if (!project || project.ownerId !== user.id) {
-    return { error: "Только владелец может обновить ссылку" };
+  if (!membership || !hasSmRights(user, membership)) {
+    return { error: "Только Scrum Master может обновить ссылку" };
   }
 
   const crypto = await import("node:crypto");
@@ -72,4 +73,29 @@ export async function joinProject(inviteToken: string) {
   }
 
   redirect(`/project/${project.id}`);
+}
+
+export async function toggleMemberSm(projectId: string, targetUserId: string) {
+  const user = await requireUser();
+
+  const callerMembership = await prisma.projectMember.findUnique({
+    where: { userId_projectId: { userId: user.id, projectId } },
+  });
+  if (!callerMembership || !hasSmRights(user, callerMembership)) {
+    return { error: "Только Scrum Master может управлять правами" };
+  }
+
+  const targetMembership = await prisma.projectMember.findUnique({
+    where: { userId_projectId: { userId: targetUserId, projectId } },
+  });
+  if (!targetMembership) {
+    return { error: "Участник не найден" };
+  }
+
+  await prisma.projectMember.update({
+    where: { id: targetMembership.id },
+    data: { isScrumMaster: !targetMembership.isScrumMaster },
+  });
+
+  return { success: true, isScrumMaster: !targetMembership.isScrumMaster };
 }

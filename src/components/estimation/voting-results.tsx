@@ -125,7 +125,7 @@ export function VotingResults({ results }: { results: EstimationResults }) {
 
       <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
         <h3 className="mb-4 text-sm font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">
-          Средние баллы
+          Медианные баллы
         </h3>
 
         <div className="space-y-3">

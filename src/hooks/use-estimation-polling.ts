@@ -25,6 +25,16 @@ export interface VoteProgress {
   currentUserVoted: boolean;
 }
 
+export interface IndividualVote {
+  oderId: string;
+  name: string;
+  devEffort: number;
+  qaEffort: number;
+  risk: number;
+  uncertainty: number;
+  totalScore: number;
+}
+
 export interface EstimationResults {
   avgDevEffort: number;
   avgQaEffort: number;
@@ -42,11 +52,13 @@ export interface SessionState {
   activeTicket: SessionTicket | null;
   votes: VoteProgress;
   results: EstimationResults | null;
+  individualVotes: IndividualVote[] | null;
   tickets: TicketListItem[];
   currentUser: {
     id: string;
     name: string;
-    role: string;
+    role: string | null;
+    isScrumMaster: boolean;
   };
 }
 

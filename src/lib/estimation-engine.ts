@@ -19,8 +19,15 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 /**
- * 2-3 → 1 SP, 4-5 → 2 SP, 6-8 → 3 SP, 9+ → 5 SP
+ * 2-3 -> 1 SP, 4-5 -> 2 SP, 6-8 -> 3 SP, 9+ -> 5 SP
  */
 function scoreToSP(total: number): number {
   if (total <= 3) return 1;
@@ -42,11 +49,10 @@ export function calculateEstimation(votes: VoteData[]): EstimationResult {
     };
   }
 
-  const n = votes.length;
-  const avgDevEffort = votes.reduce((s, v) => s + v.devEffort, 0) / n;
-  const avgQaEffort = votes.reduce((s, v) => s + v.qaEffort, 0) / n;
-  const avgRisk = votes.reduce((s, v) => s + v.risk, 0) / n;
-  const avgUncertainty = votes.reduce((s, v) => s + v.uncertainty, 0) / n;
+  const avgDevEffort = median(votes.map((v) => v.devEffort));
+  const avgQaEffort = median(votes.map((v) => v.qaEffort));
+  const avgRisk = median(votes.map((v) => v.risk));
+  const avgUncertainty = median(votes.map((v) => v.uncertainty));
 
   const totalScore = avgDevEffort + avgQaEffort + avgRisk + avgUncertainty;
   const effortSum = avgDevEffort + avgQaEffort;

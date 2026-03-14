@@ -119,6 +119,6 @@ export async function GET(request: NextRequest) {
       userId: t.userId,
       date: t.date.toISOString(),
     })),
-    currentUser: { id: user.id, role: user.role },
+    currentUser: { id: user.id, role: user.role, isScrumMaster: user.isScrumMaster || membership.isScrumMaster },
   });
 }

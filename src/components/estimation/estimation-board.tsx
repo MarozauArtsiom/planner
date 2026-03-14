@@ -6,10 +6,14 @@ import {
   useEstimationPolling,
   type SessionTicket,
   type VoteProgress,
+  type EstimationResults,
+  type IndividualVote,
 } from "@/hooks/use-estimation-polling";
 import { VotingForm } from "./voting-form";
 import { VotingResults } from "./voting-results";
+import { VoteDetails } from "./vote-details";
 import { TicketForm } from "./ticket-form";
+import { SmModeToggle, useSmMode } from "@/components/sm-mode-toggle";
 import {
   setActiveTicket,
   revealVotes,
@@ -21,20 +25,31 @@ import {
 const ROLE_LABELS: Record<string, string> = {
   DEV: "Developer",
   QA: "QA Engineer",
-  SCRUM_MASTER: "Scrum Master",
 };
 
 const ROLE_STYLES: Record<string, string> = {
   DEV: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
   QA: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
-  SCRUM_MASTER:
-    "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
 };
 
 export function EstimationBoard({ projectId }: { projectId: string }) {
   const { state, refresh } = useEstimationPolling(projectId, 2000);
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [selectedSp, setSelectedSp] = useState<number | null>(null);
+  const [viewingTicketId, setViewingTicketId] = useState<string | null>(null);
+  const [ticketStats, setTicketStats] = useState<{
+    ticket: { id: string; title: string; externalId: string | null; storyPoints: number | null };
+    results: EstimationResults | null;
+    individualVotes: IndividualVote[];
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsSp, setStatsSp] = useState<number | null>(null);
+
+  const hasSmRights = state?.currentUser.isScrumMaster ?? false;
+  const canVote = !!state?.currentUser.role;
+  const { smMode, toggle } = useSmMode(projectId, hasSmRights);
+  const isSM = hasSmRights && (canVote ? smMode : true);
 
   const act = useCallback(
     (action: () => Promise<unknown>) => {
@@ -45,6 +60,30 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
     },
     [refresh],
   );
+
+  const openTicketStats = useCallback(
+    async (ticketId: string) => {
+      setViewingTicketId(ticketId);
+      setStatsLoading(true);
+      setStatsSp(null);
+      try {
+        const res = await fetch(
+          `/api/estimation/ticket-stats?ticketId=${encodeURIComponent(ticketId)}&projectId=${encodeURIComponent(projectId)}`,
+        );
+        if (res.ok) {
+          setTicketStats(await res.json());
+        }
+      } finally {
+        setStatsLoading(false);
+      }
+    },
+    [projectId],
+  );
+
+  const closeTicketStats = useCallback(() => {
+    setViewingTicketId(null);
+    setTicketStats(null);
+  }, []);
 
   if (!state) {
     return (
@@ -75,8 +114,6 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
     );
   }
 
-  const isSM = state.currentUser.role === "SCRUM_MASTER";
-
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
       <header className="border-b border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900 md:px-6 md:py-4">
@@ -106,14 +143,24 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
           </div>
 
           <div className="flex items-center gap-3">
+            {hasSmRights && canVote && (
+              <SmModeToggle smMode={smMode} onToggle={toggle} />
+            )}
             <span className="hidden text-sm text-zinc-600 dark:text-zinc-300 sm:inline">
               {state.currentUser.name}
             </span>
-            <span
-              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_STYLES[state.currentUser.role] ?? ""}`}
-            >
-              {ROLE_LABELS[state.currentUser.role] ?? state.currentUser.role}
-            </span>
+            {state.currentUser.role && (
+              <span
+                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_STYLES[state.currentUser.role] ?? ""}`}
+              >
+                {ROLE_LABELS[state.currentUser.role] ?? state.currentUser.role}
+              </span>
+            )}
+            {hasSmRights && (
+              <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                SM
+              </span>
+            )}
           </div>
         </div>
       </header>
@@ -176,11 +223,12 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                 return (
                   <div
                     key={ticket.id}
+                    onClick={estimated && !ticket.isActive ? () => openTicketStats(ticket.id) : undefined}
                     className={`group mb-1 rounded-lg border px-3 py-2.5 transition-colors ${
                       ticket.isActive
                         ? "border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30"
                         : estimated
-                          ? "border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                          ? "cursor-pointer border-emerald-100 bg-emerald-50/50 hover:border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:hover:border-emerald-800"
                           : "border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                     }`}
                   >
@@ -246,57 +294,184 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-2xl p-4 md:p-8">
-            {state.status === "IDLE" && (
-              <IdleState isSM={isSM} hasTickets={state.tickets.length > 0} />
-            )}
+        <main className="flex flex-1 flex-col overflow-hidden">
+          {viewingTicketId && (
+            <div className="flex border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+              <button
+                type="button"
+                onClick={closeTicketStats}
+                className={`px-4 py-2.5 text-xs font-medium transition-colors ${
+                  !viewingTicketId
+                    ? "border-b-2 border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300"
+                    : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                }`}
+              >
+                Сессия
+              </button>
+              <div className="flex items-center border-b-2 border-blue-600 dark:border-blue-400">
+                <span className="px-4 py-2.5 text-xs font-medium text-blue-700 dark:text-blue-300">
+                  {statsLoading ? "Загрузка..." : ticketStats?.ticket.title ?? "Тикет"}
+                </span>
+                <button
+                  type="button"
+                  onClick={closeTicketStats}
+                  className="mr-1 rounded p-0.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
 
-            {state.status === "VOTING" && state.activeTicket && (
-              <>
-                <TicketInfo ticket={state.activeTicket} />
-                {isSM ? (
-                  <SMVotingPanel
-                    votes={state.votes}
-                    onReveal={() => act(() => revealVotes(projectId))}
-                    isPending={isPending}
-                  />
-                ) : state.votes.currentUserVoted ? (
-                  <WaitingForTeam votes={state.votes} />
-                ) : (
-                  <VotingForm projectId={projectId} onSuccess={refresh} />
-                )}
-              </>
-            )}
-
-            {state.status === "REVEALED" &&
-              state.activeTicket &&
-              state.results && (
+          <div className="flex-1 overflow-y-auto">
+            <div className="mx-auto max-w-2xl p-4 md:p-8">
+              {!viewingTicketId && (
                 <>
-                  <TicketInfo ticket={state.activeTicket} />
-                  <VotingResults results={state.results} />
-                  {isSM && (
-                    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={() => act(() => acceptEstimation(projectId))}
-                        disabled={isPending}
-                        className="flex-1 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-                      >
-                        Принять ({state.results.recommendedSp} SP)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => act(() => restartVoting(projectId))}
-                        disabled={isPending}
-                        className="rounded-xl border border-zinc-300 px-5 py-3.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                      >
-                        Переголосовать
-                      </button>
+                  {state.status === "IDLE" && (
+                    <IdleState isSM={isSM} hasTickets={state.tickets.length > 0} />
+                  )}
+
+                  {state.status === "VOTING" && state.activeTicket && (
+                    <>
+                      <TicketInfo ticket={state.activeTicket} />
+                      {canVote && !state.votes.currentUserVoted && (
+                        <div className={isSM ? "mb-6" : ""}>
+                          <VotingForm projectId={projectId} onSuccess={refresh} />
+                        </div>
+                      )}
+                      {canVote && state.votes.currentUserVoted && !isSM && (
+                        <WaitingForTeam votes={state.votes} />
+                      )}
+                      {isSM && (
+                        <SMVotingPanel
+                          votes={state.votes}
+                          onReveal={() => act(() => revealVotes(projectId))}
+                          isPending={isPending}
+                        />
+                      )}
+                    </>
+                  )}
+
+                  {state.status === "REVEALED" &&
+                    state.activeTicket &&
+                    state.results && (
+                      <>
+                        <TicketInfo ticket={state.activeTicket} />
+                        <VotingResults results={state.results} />
+                        {state.individualVotes && state.individualVotes.length > 0 && (
+                          <div className="mt-5">
+                            <VoteDetails
+                              votes={state.individualVotes}
+                              results={state.results}
+                              isSM={isSM}
+                            />
+                          </div>
+                        )}
+                        {isSM && (
+                          <SpAcceptPanel
+                            recommendedSp={state.results.recommendedSp}
+                            selectedSp={selectedSp}
+                            onSelect={setSelectedSp}
+                            onAccept={(sp) => act(() => acceptEstimation(projectId, sp))}
+                            onRestart={() => act(() => restartVoting(projectId))}
+                            isPending={isPending}
+                          />
+                        )}
+                      </>
+                    )}
+                </>
+              )}
+
+              {viewingTicketId && (
+                <>
+                  {statsLoading && (
+                    <p className="py-8 text-center text-sm text-zinc-400">Загрузка статистики...</p>
+                  )}
+
+                  {!statsLoading && ticketStats && (
+                    <div className="space-y-5">
+                      <div>
+                        {ticketStats.ticket.externalId && (
+                          <span className="rounded bg-zinc-100 px-2 py-0.5 text-xs font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                            {ticketStats.ticket.externalId}
+                          </span>
+                        )}
+                        <h2 className="mt-1 text-xl font-bold text-zinc-900 dark:text-zinc-50">
+                          {ticketStats.ticket.title}
+                        </h2>
+                        {ticketStats.ticket.storyPoints != null && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-bold text-white dark:bg-blue-500">
+                              {ticketStats.ticket.storyPoints} SP
+                            </span>
+                            <span className="text-sm text-zinc-500 dark:text-zinc-400">текущая оценка</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {ticketStats.results && (
+                        <>
+                          <VotingResults results={ticketStats.results} />
+                          {ticketStats.individualVotes.length > 0 && (
+                            <VoteDetails
+                              votes={ticketStats.individualVotes}
+                              results={ticketStats.results}
+                              isSM={isSM}
+                            />
+                          )}
+                        </>
+                      )}
+
+                      {!ticketStats.results && ticketStats.individualVotes.length === 0 && (
+                        <p className="py-8 text-center text-sm text-zinc-400">Нет голосов для этого тикета</p>
+                      )}
+
+                      {isSM && (
+                        <div className="border-t border-zinc-200 pt-4 dark:border-zinc-700">
+                          {ticketStats.results && (
+                            <SpAcceptPanel
+                              recommendedSp={ticketStats.results.recommendedSp}
+                              selectedSp={statsSp}
+                              onSelect={setStatsSp}
+                              onAccept={(sp) => {
+                                act(async () => {
+                                  await acceptEstimation(projectId, sp);
+                                  closeTicketStats();
+                                });
+                              }}
+                              onRestart={() => {
+                                act(async () => {
+                                  await setActiveTicket(projectId, viewingTicketId);
+                                  closeTicketStats();
+                                });
+                              }}
+                              isPending={isPending}
+                            />
+                          )}
+                          {!ticketStats.results && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                act(async () => {
+                                  await setActiveTicket(projectId, viewingTicketId);
+                                  closeTicketStats();
+                                });
+                              }}
+                              disabled={isPending}
+                              className="w-full rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                            >
+                              Оценить
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
               )}
+            </div>
           </div>
         </main>
       </div>
@@ -376,6 +551,80 @@ function SMVotingPanel({ votes, onReveal, isPending }: { votes: VoteProgress; on
       <button type="button" onClick={onReveal} disabled={isPending || votes.submittedCount === 0} className="w-full rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
         {isPending ? "Обработка..." : `Раскрыть результаты${votes.submittedCount > 0 ? ` (${votes.submittedCount})` : ""}`}
       </button>
+    </div>
+  );
+}
+
+const SP_OPTIONS = [1, 2, 3, 5, 8, 13];
+
+function SpAcceptPanel({
+  recommendedSp,
+  selectedSp,
+  onSelect,
+  onAccept,
+  onRestart,
+  isPending,
+}: {
+  recommendedSp: number;
+  selectedSp: number | null;
+  onSelect: (sp: number) => void;
+  onAccept: (sp: number) => void;
+  onRestart: () => void;
+  isPending: boolean;
+}) {
+  const activeSp = selectedSp ?? recommendedSp;
+
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="mb-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">
+          Story Points
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {SP_OPTIONS.map((sp) => (
+            <button
+              key={sp}
+              type="button"
+              onClick={() => onSelect(sp)}
+              disabled={isPending}
+              className={`relative flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold transition-all disabled:opacity-50 ${
+                activeSp === sp
+                  ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
+                  : "border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-blue-300 hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-blue-700 dark:hover:bg-blue-950/30"
+              }`}
+            >
+              {sp}
+              {sp === recommendedSp && activeSp !== sp && (
+                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-blue-400" />
+              )}
+            </button>
+          ))}
+        </div>
+        {activeSp !== recommendedSp && (
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            Рекомендация: {recommendedSp} SP
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button
+          type="button"
+          onClick={() => onAccept(activeSp)}
+          disabled={isPending}
+          className="flex-1 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+        >
+          Принять ({activeSp} SP)
+        </button>
+        <button
+          type="button"
+          onClick={onRestart}
+          disabled={isPending}
+          className="rounded-xl border border-zinc-300 px-5 py-3.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          Переголосовать
+        </button>
+      </div>
     </div>
   );
 }

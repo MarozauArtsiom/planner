@@ -8,12 +8,13 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  passwordHash String
-  name         String   @unique
-  role         String   // "DEV" | "QA" | "SCRUM_MASTER"
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  passwordHash  String
+  name          String   @unique
+  role          String?  // "DEV" | "QA" | null (pure SM)
+  isScrumMaster Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   votes            Vote[]
   ticketAssignments TicketAssignment[]
@@ -38,8 +39,9 @@ model Project {
 }
 
 model ProjectMember {
-  id       String   @id @default(cuid())
-  joinedAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  joinedAt      DateTime @default(now())
+  isScrumMaster Boolean  @default(false)
 
   userId    String
   user      User    @relation(fields: [userId], references: [id])

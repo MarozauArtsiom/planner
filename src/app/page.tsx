@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/current-user";
-import { isScrumMaster } from "@/lib/permissions";
 import { logout } from "@/app/actions/auth";
 import { createProject } from "@/app/actions/project";
 import { prisma } from "@/lib/db";
@@ -15,14 +14,11 @@ async function handleCreateProject(formData: FormData) {
 const ROLE_LABELS: Record<string, string> = {
   DEV: "Developer",
   QA: "QA Engineer",
-  SCRUM_MASTER: "Scrum Master",
 };
 
 const ROLE_STYLES: Record<string, string> = {
   DEV: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
   QA: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
-  SCRUM_MASTER:
-    "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
 };
 
 export default async function HomePage() {
@@ -42,7 +38,7 @@ export default async function HomePage() {
     orderBy: { joinedAt: "desc" },
   });
 
-  const sm = isScrumMaster(user);
+  const sm = user.isScrumMaster;
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
@@ -57,11 +53,18 @@ export default async function HomePage() {
               <span className="text-sm text-zinc-600 dark:text-zinc-300">
                 {user.name}
               </span>
-              <span
-                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_STYLES[user.role] ?? ""}`}
-              >
-                {ROLE_LABELS[user.role] ?? user.role}
-              </span>
+              {user.role && (
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_STYLES[user.role] ?? ""}`}
+                >
+                  {ROLE_LABELS[user.role] ?? user.role}
+                </span>
+              )}
+              {user.isScrumMaster && (
+                <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                  SM
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3 border-l border-zinc-200 pl-4 dark:border-zinc-700">
               <Link
@@ -173,7 +176,7 @@ export default async function HomePage() {
             )
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {memberships.map(({ project }) => (
+              {memberships.map(({ project, isScrumMaster: memberSm }) => (
                 <div
                   key={project.id}
                   className="group relative rounded-xl border border-zinc-200 bg-white p-5 transition-all hover:border-blue-300 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-blue-800"
@@ -204,7 +207,7 @@ export default async function HomePage() {
                       >
                         Оценка
                       </Link>
-                      {sm && <CopyInviteButton inviteToken={project.inviteToken} />}
+                      {(sm || memberSm) && <CopyInviteButton inviteToken={project.inviteToken} />}
                     </div>
                   </div>
                 </div>

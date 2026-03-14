@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { hasSmRights } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +16,19 @@ export async function GET(
 
   const { id } = await params;
 
-  const project = await prisma.project.findUnique({ where: { id } });
-  if (!project || project.ownerId !== userId)
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user)
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  const membership = await prisma.projectMember.findUnique({
+    where: { userId_projectId: { userId, projectId: id } },
+  });
+  if (!membership || !hasSmRights(user, membership))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const project = await prisma.project.findUnique({ where: { id } });
+  if (!project)
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const hdrs = await headers();
   const host = hdrs.get("host") || "localhost:6969";

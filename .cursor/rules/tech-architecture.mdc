@@ -40,9 +40,9 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 
 ### Ключевые модели
 
-- **User** — login/passwordHash для авторизации, глобальная роль (DEV/QA/SCRUM_MASTER).
+- **User** — login/passwordHash для авторизации. Командная роль `role` (`"DEV" | "QA" | null`). Глобальный SM-флаг `isScrumMaster: Boolean`.
 - **Project** — корневая сущность. Содержит `inviteToken` (unique, reusable) для invite-ссылок. `ownerId` — SM, создавший проект.
-- **ProjectMember** — связь User ↔ Project. Unique constraint `[userId, projectId]`.
+- **ProjectMember** — связь User ↔ Project. Unique constraint `[userId, projectId]`. Per-project SM-флаг `isScrumMaster: Boolean`.
 - **Sprint, Ticket, EstimationSession** — привязаны к Project через `projectId`.
 - **TicketAssignment** — отделен от Ticket, поддержка Dev/QA ассайнментов на разных людей. `parentAssignmentId` для Finish-to-Start зависимости.
 - **Vote** — unique per `[userId, ticketId]`.
@@ -50,19 +50,20 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 ### Ключевые решения
 
 - **Assignment отделен от Ticket** — одна задача может иметь Dev-ассайнмент и QA-ассайнмент на разных людей.
-- **Role глобальная** — выбирается при регистрации. SM может создавать проекты.
+- **SM как флаг, а не роль** — `User.isScrumMaster` (глобальный) + `ProjectMember.isScrumMaster` (per-project). Итоговые SM-права = `user.isScrumMaster || membership.isScrumMaster`. Центральный хелпер: `hasSmRights(user, membership)`.
+- **Командная роль опциональна** — `User.role` nullable. Чистый SM (role=null) не виден на Ганте, не голосует.
 - **inviteToken на Project** — без отдельной таблицы. Перегенерация инвалидирует старую ссылку.
 
 ## 6. Маршрутизация
 
-- `/register` — регистрация (name, login, password, role)
+- `/register` — регистрация (name, password, role?, isScrumMaster)
 - `/login` — вход (login, password)
 - `/` — список проектов пользователя
 - `/project/[id]` — Board проекта (Gantt)
 - `/project/[id]/estimation` — сессия оценки
-- `/project/[id]/settings` — настройки проекта (invite link)
+- `/project/[id]/settings` — настройки проекта (invite link, участники с SM toggle)
 - `/invite/[token]` — присоединение к проекту
-- `/settings` — профиль пользователя
+- `/settings` — профиль пользователя (role, isScrumMaster)
 
 ## 7. Логика диаграммы Ганта
 
@@ -70,3 +71,10 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 - **SP -> длительность:** 1 SP = 2 дня, 2 SP = 3 дня, 3 SP = 5 дней. Ручной resize перезаписывает расчетную длину.
 - **Finish-to-Start:** При сдвиге Dev-блока QA-блок автоматически двигается следом.
 - **Математика дат:** date-fns для расчета рабочих дней и «разрывов» отпусков.
+
+## 8. Permissions Architecture
+
+- **`src/lib/permissions.ts`** — единственный хелпер `hasSmRights(user, membership)`.
+- **Server Actions** — каждый файл с SM-only actions содержит `requireProjectSM(projectId)`, который загружает user + membership и вызывает `hasSmRights`.
+- **Создание проектов** — проверяется `user.isScrumMaster` (глобальный флаг).
+- **UI переключатель** — `SmModeToggle` компонент + `useSmMode(projectId, hasSmRights)` hook. Состояние в `localStorage`. Чистый SM (role=null) всегда в SM-режиме без toggle.

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { hasSmRights } from "@/lib/permissions";
 import {
   isWednesday,
   getSprintEndDate,
@@ -23,7 +24,7 @@ async function requireProjectSM(projectId: string) {
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership) throw new Error("Нет доступа к проекту");
-  if (user.role !== "SCRUM_MASTER")
+  if (!hasSmRights(user, membership))
     throw new Error("Только Scrum Master может выполнять это действие");
   return user;
 }

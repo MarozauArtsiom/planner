@@ -50,7 +50,7 @@ export interface BoardState {
   assignments: BoardAssignment[];
   backlog: BacklogTicket[];
   timeOffs: BoardTimeOff[];
-  currentUser: { id: string; role: string };
+  currentUser: { id: string; role: string | null; isScrumMaster: boolean };
 }
 
 export function useBoardPolling(projectId: string, intervalMs = 2000) {

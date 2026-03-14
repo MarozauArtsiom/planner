@@ -7,7 +7,7 @@
 ## Что реализовано
 
 ### Авторизация
-- Регистрация `/register` — имя, логин, пароль, выбор роли (DEV/QA/SCRUM_MASTER).
+- Регистрация `/register` — имя, пароль, выбор командной роли (DEV/QA, опционально) + чекбокс «Scrum Master» (опционально). Нужно выбрать хотя бы что-то.
 - Вход `/login` — логин + пароль. Пароли хранятся как bcrypt-хеш.
 - Сессия — httpOnly cookie `userId`, 1 год.
 - Logout — кнопка на всех страницах, очищает cookie.
@@ -16,7 +16,7 @@
 ### Проекты
 - Модель `Project` с owner (SM) и `inviteToken`.
 - Модель `ProjectMember` — связь User и Project.
-- SM создаёт проект на главной странице `/`. Автоматически становится участником.
+- Пользователь с `isScrumMaster = true` создаёт проект на главной странице `/`. Автоматически становится участником с per-project SM-правами.
 - Все данные (Sprint, Ticket, EstimationSession) привязаны к проекту через `projectId`.
 - Главная страница показывает список проектов текущего пользователя.
 
@@ -26,7 +26,7 @@
 - Незалогиненный пользователь → redirect на `/login?redirect=/invite/{token}`.
 - Залогиненный, не участник → страница "Присоединиться к {project.name}?".
 - Залогиненный, уже участник → redirect на `/project/{id}`.
-- SM может перегенерировать токен в настройках проекта `/project/{id}/settings`.
+- Любой SM проекта (по роли или per-project флагу) может перегенерировать токен в настройках проекта `/project/{id}/settings`.
 
 ## Ключевые файлы
 
@@ -40,7 +40,8 @@
 | `src/app/register/page.tsx` | Страница регистрации |
 | `src/app/page.tsx` | Список проектов |
 | `src/app/project/[id]/page.tsx` | Board проекта |
-| `src/app/project/[id]/settings/page.tsx` | Настройки проекта (invite-ссылка) |
+| `src/app/project/[id]/settings/page.tsx` | Настройки проекта (invite-ссылка, управление SM-правами) |
+| `src/app/api/project/[id]/members/route.ts` | API списка участников проекта |
 | `src/app/invite/[token]/page.tsx` | Присоединение по invite |
 | `src/app/api/project/[id]/invite/route.ts` | API для получения invite URL |
 | `src/proxy.ts` | Auth guard — redirect на /login |
@@ -55,3 +56,5 @@
 | 2026-03-14 | feat | Главная страница — список проектов |
 | 2026-03-14 | refactor | Estimation перенесена под /project/[id]/estimation с projectId |
 | 2026-03-14 | refactor | Удалён /onboarding, заменён на /register + /login |
+| 2026-03-14 | feat | Секция управления SM-правами участников в настройках проекта |
+| 2026-03-14 | refactor | Invite API и regenerateToken проверяют SM-права вместо ownerId |

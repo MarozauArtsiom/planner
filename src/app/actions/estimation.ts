@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { hasSmRights } from "@/lib/permissions";
 import { calculateEstimation } from "@/lib/estimation-engine";
 
 async function requireUser() {
@@ -19,12 +20,12 @@ async function requireProjectMember(projectId: string) {
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership) throw new Error("Нет доступа к проекту");
-  return user;
+  return { user, membership };
 }
 
 async function requireProjectSM(projectId: string) {
-  const user = await requireProjectMember(projectId);
-  if (user.role !== "SCRUM_MASTER")
+  const { user, membership } = await requireProjectMember(projectId);
+  if (!hasSmRights(user, membership))
     throw new Error("Только Scrum Master может выполнять это действие");
   return user;
 }
@@ -92,9 +93,9 @@ const VALID_RISK = [0, 1, 2];
 const VALID_UNCERTAINTY = [0, 1, 2];
 
 export async function submitVote(projectId: string, formData: FormData) {
-  const user = await requireProjectMember(projectId);
-  if (user.role === "SCRUM_MASTER") {
-    return { error: "Scrum Master не голосует" };
+  const { user } = await requireProjectMember(projectId);
+  if (!user.role) {
+    return { error: "Только участники команды (DEV/QA) могут голосовать" };
   }
 
   const session = await getActiveSession(projectId);
@@ -153,7 +154,7 @@ export async function revealVotes(projectId: string) {
   return { success: true };
 }
 
-export async function acceptEstimation(projectId: string) {
+export async function acceptEstimation(projectId: string, overrideSp?: number) {
   await requireProjectSM(projectId);
   const session = await getActiveSession(projectId);
 
@@ -166,11 +167,12 @@ export async function acceptEstimation(projectId: string) {
   });
 
   const result = calculateEstimation(votes);
+  const sp = overrideSp && overrideSp > 0 ? overrideSp : result.recommendedSp;
 
   await prisma.ticket.update({
     where: { id: session.activeTicketId },
     data: {
-      storyPoints: result.recommendedSp,
+      storyPoints: sp,
       devEffortProportion: result.devProportion,
     },
   });

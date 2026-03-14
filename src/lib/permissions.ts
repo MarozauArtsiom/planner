@@ -1,9 +1,6 @@
-import type { User } from "@/generated/prisma/client";
-
-export function isScrumMaster(user: User): boolean {
-  return user.role === "SCRUM_MASTER";
-}
-
-export function canEditBoard(user: User): boolean {
-  return isScrumMaster(user);
+export function hasSmRights(
+  user: { isScrumMaster: boolean },
+  membership?: { isScrumMaster: boolean } | null,
+): boolean {
+  return user.isScrumMaster || membership?.isScrumMaster === true;
 }

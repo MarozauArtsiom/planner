@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-03-14 (Estimation: расширенная статистика)
+- **refactor(estimation-engine):** Медиана вместо среднего — устойчивость к выбросам
+- **feat(estimation):** Таблица индивидуальных голосов «Голоса команды» для всех участников после раскрытия
+- **feat(estimation):** SM-only: подсветка Risk=2 (amber), IQR outlier detection (красный бордер + бейдж «Выброс»), строка медианы
+- **feat(api):** `GET /api/estimation/ticket-stats` — статистика любого тикета с голосами
+- **feat(estimation):** Клик на оценённый тикет в sidebar — модал со статистикой, голосами и SM-кнопками
+
+## 2026-03-14 (Estimation: SM override SP)
+- **feat(estimation):** SM выбирает произвольное значение SP (1/2/3/5/8/13) при принятии оценки — Fibonacci-шкала с предвыбранной рекомендацией
+- **feat(estimation):** `acceptEstimation` принимает опциональный `overrideSp` параметр
+
+## 2026-03-14 (Документация)
+- **chore(prd):** Обновлён PRD v4.0 — роли, регистрация, SM как флаг, множественные SM, эпик 6
+- **chore(tech-architecture):** Обновлён Tech Architecture — схема БД с nullable role и SM-флагами, permissions architecture
+- **chore(feature-docs):** Добавлены правила обновления PRD и Tech Architecture при изменениях бизнес-логики или архитектуры
+- **chore(epic-docs):** Обновлены epic-0, epic-1, epic-6 — nullable role, актуальная регистрация
+
+## 2026-03-14 (Эпик 6: SM как флаг + несколько Скрам-мастеров)
+- **refactor(schema):** `User.role` стал nullable (`"DEV" | "QA" | null`). Чистый SM (role=null) не виден на Ганте и не голосует
+- **refactor(schema):** `SCRUM_MASTER` удалён из `User.role`. Добавлен `User.isScrumMaster: Boolean`
+- **feat(schema):** `ProjectMember.isScrumMaster: Boolean` — per-project SM-права
+- **feat(permissions):** Единый хелпер `hasSmRights(user, membership)` — проверяет оба флага
+- **feat(register):** 2 карточки DEV/QA + чекбокс «Scrum Master» при регистрации
+- **feat(settings):** Dropdown DEV/QA + чекбокс SM в настройках профиля
+- **feat(sm-toggle):** Компонент `SmModeToggle` + hook `useSmMode` — переключатель «Команда / Скрам Мастер» (localStorage)
+- **feat(project-settings):** Секция «Участники» — toggle per-project SM-прав, бейдж «SM» для глобальных SM
+- **feat(api):** `GET /api/project/[id]/members` — список участников с SM-статусами
+- **refactor(actions):** Все `requireProjectSM()` обновлены на `hasSmRights(user, membership)`
+- **refactor(estimation):** Все пользователи голосуют — ограничение `canVote` по роли удалено
+- **refactor(invite):** `regenerateInviteToken` и invite API проверяют SM-права вместо ownerId
+- **refactor(project-page):** Вынесен в client wrapper `ProjectContent` для поддержки toggle
+- **refactor(ui):** `SCRUM_MASTER` удалён из `ROLE_LABELS`/`ROLE_STYLES` во всех страницах
+
 ## 2026-03-14 (Эпик 5: Учёт отсутствия / Time-offs)
 - **feat(timeoff):** Server action `toggleTimeOff` — SM переключает нерабочие дни кликом по ячейке дня в строке сотрудника
 - **feat(board-api):** GET /api/board/state возвращает `timeOffs` для участников проекта в диапазоне спринтов

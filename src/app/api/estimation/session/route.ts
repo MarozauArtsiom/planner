@@ -40,10 +40,12 @@ export async function GET(request: NextRequest) {
   let submittedCount = 0;
   let currentUserVoted = false;
   let results = null;
+  let individualVotes = null;
 
   if (session?.activeTicketId) {
     const votes = await prisma.vote.findMany({
       where: { ticketId: session.activeTicketId },
+      include: { user: { select: { id: true, name: true } } },
     });
 
     submittedCount = votes.length;
@@ -52,6 +54,15 @@ export async function GET(request: NextRequest) {
     if (session.status === "REVEALED") {
       const calc = calculateEstimation(votes);
       results = { ...calc, voteCount: votes.length };
+      individualVotes = votes.map((v) => ({
+        oderId: v.user.id,
+        name: v.user.name,
+        devEffort: v.devEffort,
+        qaEffort: v.qaEffort,
+        risk: v.risk,
+        uncertainty: v.uncertainty,
+        totalScore: v.devEffort + v.qaEffort + v.risk + v.uncertainty,
+      }));
     }
   }
 
@@ -95,11 +106,13 @@ export async function GET(request: NextRequest) {
       currentUserVoted,
     },
     results,
+    individualVotes,
     tickets,
     currentUser: {
       id: user.id,
       name: user.name,
       role: user.role,
+      isScrumMaster: user.isScrumMaster || membership.isScrumMaster,
     },
   });
 }
