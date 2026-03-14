@@ -7,7 +7,6 @@ import { useSearchParams } from "next/navigation";
 import { register } from "@/app/actions/auth";
 
 type ActionState = { error?: string } | undefined;
-type Role = "DEV" | "QA";
 
 export default function RegisterPage() {
   return (
@@ -20,24 +19,16 @@ export default function RegisterPage() {
 function RegisterForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [isSm, setIsSm] = useState(false);
-
-  const hasSelection = selectedRole !== null || isSm;
 
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
     async (_prev, formData) => {
-      if (selectedRole) formData.set("role", selectedRole);
       if (isSm) formData.set("isScrumMaster", "on");
       formData.set("redirectTo", redirectTo);
       return await register(formData);
     },
     undefined,
   );
-
-  const toggleRole = (role: Role) => {
-    setSelectedRole((prev) => (prev === role ? null : role));
-  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-zinc-950">
@@ -82,36 +73,6 @@ function RegisterForm() {
             />
           </div>
 
-          <fieldset>
-            <legend className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Роль в команде
-              <span className="ml-1 font-normal text-zinc-400">(опционально)</span>
-            </legend>
-            <div className="mt-2 grid grid-cols-2 gap-3">
-              {([
-                { role: "DEV" as Role, label: "Developer", desc: "Разработка", d: "M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" },
-                { role: "QA" as Role, label: "QA Engineer", desc: "Тестирование", d: "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" },
-              ]).map((r) => (
-                <button
-                  key={r.role}
-                  type="button"
-                  onClick={() => toggleRole(r.role)}
-                  className={`flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-6 transition-all ${
-                    selectedRole === r.role
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950/50 dark:text-blue-300"
-                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600"
-                  }`}
-                >
-                  <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d={r.d} />
-                  </svg>
-                  <span className="text-sm font-semibold">{r.label}</span>
-                  <span className="text-xs opacity-70">{r.desc}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
           <label className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 px-4 py-4 transition-all select-none ${
             isSm
               ? "border-amber-400 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/30"
@@ -134,8 +95,6 @@ function RegisterForm() {
             </div>
           </label>
 
-          <input type="hidden" name="role" value={selectedRole ?? ""} />
-
           {state?.error && (
             <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-950/50 dark:text-red-400">
               {state.error}
@@ -144,7 +103,7 @@ function RegisterForm() {
 
           <button
             type="submit"
-            disabled={isPending || !hasSelection}
+            disabled={isPending}
             className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
             {isPending ? "Регистрация..." : "Зарегистрироваться"}

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-03-15 (Per-project роли и множественные invite-ссылки)
+- **refactor(schema):** Роль (`role`) перенесена с `User` на `ProjectMember` — теперь per-project
+- **feat(schema):** Новая модель `InviteLink` — множественные invite-ссылки с флагом `grantsSm`
+- **refactor(schema):** Удалён `Project.inviteToken`, заменён на `InviteLink.token`
+- **feat(invite):** При присоединении к проекту пользователь выбирает роль (DEV/QA/без роли)
+- **feat(invite):** SM может создавать несколько invite-ссылок (с/без SM-прав) в настройках проекта
+- **feat(settings):** SM может менять роль участника (DEV/QA/—) через сегментированные кнопки
+- **feat(settings):** Секция управления invite-ссылками — создание, копирование, удаление
+- **refactor(register):** Упрощена регистрация — имя + пароль + чекбокс SM (без выбора роли)
+- **refactor(settings):** Настройки профиля — убран выбор роли (теперь per-project)
+- **refactor(api):** board/state, estimation/session — фильтрация по `ProjectMember.role` вместо `User.role`
+- **refactor(actions):** estimation, assignment — проверки по `membership.role` вместо `user.role`
+- **chore(seed):** Роли перенесены в `memberDefs` для `ProjectMember`, добавлены 2 `InviteLink`
+- **chore(prd):** Обновлён PRD v5.0 — per-project роли, множественные invite-ссылки
+- **chore(tech-architecture):** Обновлены модели БД, маршрутизация
+- **refactor(sm-toggle):** Удалён переключатель «Команда / Скрам Мастер». SM с ролью DEV/QA теперь всегда видит расширенный UI и может голосовать + управлять одновременно
+
 ## 2026-03-14 (Seed: тестовые данные)
 - **chore(seed):** Prisma seed скрипт `prisma/seed.ts` — 16 пользователей (5 DEV, 5 QA, 2 DEV+SM, 2 QA+SM, 2 pure SM), пароль `1234`
 - **chore(seed):** Проект «Todo List App» с 23 тикетами (Auth, CRUD, Lists, Rich Content, Collaboration, UX)

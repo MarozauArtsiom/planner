@@ -55,18 +55,16 @@ export async function assignTicket(
 
   if (dropRole === "DEV") {
     const qaMember = await prisma.projectMember.findFirst({
-      where: { projectId, user: { role: "QA" } },
-      include: { user: true },
+      where: { projectId, role: "QA" },
     });
-    qaUserId = qaMember?.user.id ?? null;
+    qaUserId = qaMember?.userId ?? null;
   } else {
     qaUserId = userId;
     const devMember = await prisma.projectMember.findFirst({
-      where: { projectId, user: { role: "DEV" } },
-      include: { user: true },
+      where: { projectId, role: "DEV" },
     });
     if (!devMember) return { error: "Нет разработчиков в проекте" };
-    devUserId = devMember.user.id;
+    devUserId = devMember.userId;
   }
 
   const devStart = new Date(startDateISO);

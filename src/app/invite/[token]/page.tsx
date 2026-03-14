@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/db";
 import { joinProject } from "@/app/actions/project";
+import { InviteForm } from "./invite-form";
 
 export default async function InvitePage({
   params,
@@ -10,25 +11,21 @@ export default async function InvitePage({
 }) {
   const { token } = await params;
 
-  const project = await prisma.project.findUnique({
-    where: { inviteToken: token },
+  const link = await prisma.inviteLink.findUnique({
+    where: { token },
+    include: { project: true },
   });
-  if (!project) notFound();
+  if (!link) notFound();
 
   const user = await getCurrentUser();
   if (!user) redirect(`/login?redirect=/invite/${token}`);
 
   const existing = await prisma.projectMember.findUnique({
     where: {
-      userId_projectId: { userId: user.id, projectId: project.id },
+      userId_projectId: { userId: user.id, projectId: link.projectId },
     },
   });
-  if (existing) redirect(`/project/${project.id}`);
-
-  async function handleJoin() {
-    "use server";
-    await joinProject(token);
-  }
+  if (existing) redirect(`/project/${link.projectId}`);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-zinc-950">
@@ -56,19 +53,12 @@ export default async function InvitePage({
           <p className="mt-2 text-zinc-500 dark:text-zinc-400">
             Вас приглашают в проект{" "}
             <span className="font-semibold text-zinc-900 dark:text-zinc-50">
-              {project.name}
+              {link.project.name}
             </span>
           </p>
         </div>
 
-        <form action={handleJoin}>
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:bg-blue-500 dark:hover:bg-blue-600"
-          >
-            Присоединиться
-          </button>
-        </form>
+        <InviteForm token={token} grantsSm={link.grantsSm} />
       </div>
     </div>
   );

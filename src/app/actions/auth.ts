@@ -5,16 +5,9 @@ import { prisma } from "@/lib/db";
 import { setSession, clearSession } from "@/lib/session";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
-const VALID_ROLES = ["DEV", "QA"] as const;
-
-function isValidRole(v: string): v is (typeof VALID_ROLES)[number] {
-  return VALID_ROLES.includes(v as (typeof VALID_ROLES)[number]);
-}
-
 export async function register(formData: FormData) {
   const name = (formData.get("name") as string)?.trim();
   const password = formData.get("password") as string;
-  const rawRole = (formData.get("role") as string)?.trim() || null;
   const isScrumMaster = formData.get("isScrumMaster") === "on";
   const redirectTo = (formData.get("redirectTo") as string) || "/";
 
@@ -23,18 +16,13 @@ export async function register(formData: FormData) {
   if (!password || password.length < 4)
     return { error: "Пароль минимум 4 символа" };
 
-  const role = rawRole && isValidRole(rawRole) ? rawRole : null;
-
-  if (!role && !isScrumMaster)
-    return { error: "Выберите хотя бы роль в команде или Scrum Master" };
-
   const existing = await prisma.user.findUnique({ where: { name } });
   if (existing) return { error: "Этот ник уже занят" };
 
   try {
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
-      data: { passwordHash, name, role, isScrumMaster },
+      data: { passwordHash, name, isScrumMaster },
     });
 
     await setSession(user.id);

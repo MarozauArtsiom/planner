@@ -24,15 +24,15 @@ model User {
 }
 
 model Project {
-  id          String   @id @default(cuid())
-  name        String
-  inviteToken String   @unique @default(cuid())
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
 
   ownerId String
   owner   User   @relation("OwnedProjects", fields: [ownerId], references: [id])
 
   members            ProjectMember[]
+  inviteLinks        InviteLink[]
   sprints            Sprint[]
   tickets            Ticket[]
   estimationSessions EstimationSession[]
@@ -41,6 +41,7 @@ model Project {
 model ProjectMember {
   id            String   @id @default(cuid())
   joinedAt      DateTime @default(now())
+  role          String?  // "DEV" | "QA" | null
   isScrumMaster Boolean  @default(false)
 
   userId    String
@@ -49,6 +50,17 @@ model ProjectMember {
   project   Project @relation(fields: [projectId], references: [id])
 
   @@unique([userId, projectId])
+}
+
+model InviteLink {
+  id        String   @id @default(cuid())
+  token     String   @unique @default(cuid())
+  grantsSm  Boolean  @default(false)
+  label     String?
+  createdAt DateTime @default(now())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
 }
 
 model Sprint {

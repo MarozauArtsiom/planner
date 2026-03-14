@@ -93,8 +93,8 @@ const VALID_RISK = [0, 1, 2];
 const VALID_UNCERTAINTY = [0, 1, 2];
 
 export async function submitVote(projectId: string, formData: FormData) {
-  const { user } = await requireProjectMember(projectId);
-  if (!user.role) {
+  const { user, membership } = await requireProjectMember(projectId);
+  if (!membership.role) {
     return { error: "Только участники команды (DEV/QA) могут голосовать" };
   }
 

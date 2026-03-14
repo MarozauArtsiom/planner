@@ -40,9 +40,10 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 
 ### Ключевые модели
 
-- **User** — login/passwordHash для авторизации. Командная роль `role` (`"DEV" | "QA" | null`). Глобальный SM-флаг `isScrumMaster: Boolean`.
-- **Project** — корневая сущность. Содержит `inviteToken` (unique, reusable) для invite-ссылок. `ownerId` — SM, создавший проект.
-- **ProjectMember** — связь User ↔ Project. Unique constraint `[userId, projectId]`. Per-project SM-флаг `isScrumMaster: Boolean`.
+- **User** — login/passwordHash для авторизации. Глобальный SM-флаг `isScrumMaster: Boolean` (право создавать проекты). Поле `role` deprecated — роль теперь per-project.
+- **Project** — корневая сущность. `ownerId` — SM, создавший проект.
+- **ProjectMember** — связь User ↔ Project. Unique constraint `[userId, projectId]`. Per-project роль `role` (`"DEV" | "QA" | null`). Per-project SM-флаг `isScrumMaster: Boolean`.
+- **InviteLink** — invite-ссылка для проекта. Уникальный `token`, флаг `grantsSm` (даёт SM-права при присоединении), опциональный `label`. Несколько ссылок на проект.
 - **Sprint, Ticket, EstimationSession** — привязаны к Project через `projectId`.
 - **TicketAssignment** — отделен от Ticket, поддержка Dev/QA ассайнментов на разных людей. `parentAssignmentId` для Finish-to-Start зависимости.
 - **Vote** — unique per `[userId, ticketId]`.
@@ -50,20 +51,20 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 ### Ключевые решения
 
 - **Assignment отделен от Ticket** — одна задача может иметь Dev-ассайнмент и QA-ассайнмент на разных людей.
-- **SM как флаг, а не роль** — `User.isScrumMaster` (глобальный) + `ProjectMember.isScrumMaster` (per-project). Итоговые SM-права = `user.isScrumMaster || membership.isScrumMaster`. Центральный хелпер: `hasSmRights(user, membership)`.
-- **Командная роль опциональна** — `User.role` nullable. Чистый SM (role=null) не виден на Ганте, не голосует.
-- **inviteToken на Project** — без отдельной таблицы. Перегенерация инвалидирует старую ссылку.
+- **SM как флаг, а не роль** — `User.isScrumMaster` (глобальный, для создания проектов) + `ProjectMember.isScrumMaster` (per-project). Итоговые SM-права = `user.isScrumMaster || membership.isScrumMaster`. Центральный хелпер: `hasSmRights(user, membership)`.
+- **Командная роль per-project** — `ProjectMember.role` nullable. Выбирается при присоединении к проекту. SM может менять роль участника в настройках. Чистый SM (role=null) не виден на Ганте, не голосует.
+- **Множественные invite-ссылки** — модель `InviteLink` вместо `Project.inviteToken`. SM-флаг закодирован в токене (в БД), а не передаётся как URL-параметр.
 
 ## 6. Маршрутизация
 
-- `/register` — регистрация (name, password, role?, isScrumMaster)
+- `/register` — регистрация (name, password, isScrumMaster)
 - `/login` — вход (login, password)
 - `/` — список проектов пользователя
 - `/project/[id]` — Board проекта (Gantt)
 - `/project/[id]/estimation` — сессия оценки
-- `/project/[id]/settings` — настройки проекта (invite link, участники с SM toggle)
-- `/invite/[token]` — присоединение к проекту
-- `/settings` — профиль пользователя (role, isScrumMaster)
+- `/project/[id]/settings` — настройки проекта (invite-ссылки, участники с ролями и SM toggle)
+- `/invite/[token]` — присоединение к проекту (выбор роли DEV/QA)
+- `/settings` — профиль пользователя (isScrumMaster)
 
 ## 7. Логика диаграммы Ганта
 
@@ -77,4 +78,4 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 - **`src/lib/permissions.ts`** — единственный хелпер `hasSmRights(user, membership)`.
 - **Server Actions** — каждый файл с SM-only actions содержит `requireProjectSM(projectId)`, который загружает user + membership и вызывает `hasSmRights`.
 - **Создание проектов** — проверяется `user.isScrumMaster` (глобальный флаг).
-- **UI переключатель** — `SmModeToggle` компонент + `useSmMode(projectId, hasSmRights)` hook. Состояние в `localStorage`. Чистый SM (role=null) всегда в SM-режиме без toggle.
+- **SM всегда активен** — пользователь с SM-правами видит расширенный UI без необходимости переключения. Голосование и управление доступны одновременно.

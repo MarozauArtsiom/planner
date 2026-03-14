@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   const totalVoters = await prisma.projectMember.count({
     where: {
       projectId,
-      user: { role: { in: ["DEV", "QA"] } },
+      role: { in: ["DEV", "QA"] },
     },
   });
 
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     if (session.status === "VOTING" && isSM) {
       const teamMembers = await prisma.projectMember.findMany({
-        where: { projectId, user: { role: { in: ["DEV", "QA"] } } },
+        where: { projectId, role: { in: ["DEV", "QA"] } },
         include: { user: { select: { id: true, name: true } } },
         orderBy: { user: { name: "asc" } },
       });
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
     currentUser: {
       id: user.id,
       name: user.name,
-      role: user.role,
+      role: membership.role,
       isScrumMaster: isSM,
     },
   });

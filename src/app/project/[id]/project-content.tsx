@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { GanttBoard } from "@/components/gantt/gantt-board";
-import { SmModeToggle, useSmMode } from "@/components/sm-mode-toggle";
 import { EstimationToast } from "@/components/estimation-toast";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -33,10 +32,7 @@ export function ProjectContent({
   hasSmRights,
   userIsSm,
 }: Props) {
-  const isTeamMember = !!userRole;
-  const needsToggle = hasSmRights && isTeamMember;
-  const { smMode, toggle } = useSmMode(projectId, needsToggle);
-  const effectiveSM = hasSmRights && (isTeamMember ? smMode : true);
+  const effectiveSM = hasSmRights;
 
   return (
     <div className="flex h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
@@ -57,9 +53,6 @@ export function ProjectContent({
           </div>
 
           <div className="flex items-center gap-4">
-            {needsToggle && (
-              <SmModeToggle smMode={smMode} onToggle={toggle} />
-            )}
             <div className="flex items-center gap-2">
               <span className="text-sm text-zinc-600 dark:text-zinc-300">
                 {userName}

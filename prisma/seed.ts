@@ -9,32 +9,51 @@ const prisma = new PrismaClient({ adapter });
 
 type UserDef = {
   name: string;
-  role: string | null;
   isScrumMaster: boolean;
 };
 
 const users: UserDef[] = [
-  // Pure DEV (5)
-  { name: "dev-1", role: "DEV", isScrumMaster: false },
-  { name: "dev-2", role: "DEV", isScrumMaster: false },
-  { name: "dev-3", role: "DEV", isScrumMaster: false },
-  { name: "dev-4", role: "DEV", isScrumMaster: false },
-  { name: "dev-5", role: "DEV", isScrumMaster: false },
-  // Pure QA (5)
-  { name: "qa-1", role: "QA", isScrumMaster: false },
-  { name: "qa-2", role: "QA", isScrumMaster: false },
-  { name: "qa-3", role: "QA", isScrumMaster: false },
-  { name: "qa-4", role: "QA", isScrumMaster: false },
-  { name: "qa-5", role: "QA", isScrumMaster: false },
-  // DEV + Scrum Master (2)
-  { name: "dev-sm-1", role: "DEV", isScrumMaster: true },
-  { name: "dev-sm-2", role: "DEV", isScrumMaster: true },
-  // QA + Scrum Master (2)
-  { name: "qa-sm-1", role: "QA", isScrumMaster: true },
-  { name: "qa-sm-2", role: "QA", isScrumMaster: true },
-  // Pure Scrum Master (2)
-  { name: "sm-1", role: null, isScrumMaster: true },
-  { name: "sm-2", role: null, isScrumMaster: true },
+  { name: "dev-1", isScrumMaster: false },
+  { name: "dev-2", isScrumMaster: false },
+  { name: "dev-3", isScrumMaster: false },
+  { name: "dev-4", isScrumMaster: false },
+  { name: "dev-5", isScrumMaster: false },
+  { name: "qa-1", isScrumMaster: false },
+  { name: "qa-2", isScrumMaster: false },
+  { name: "qa-3", isScrumMaster: false },
+  { name: "qa-4", isScrumMaster: false },
+  { name: "qa-5", isScrumMaster: false },
+  { name: "dev-sm-1", isScrumMaster: true },
+  { name: "dev-sm-2", isScrumMaster: true },
+  { name: "qa-sm-1", isScrumMaster: true },
+  { name: "qa-sm-2", isScrumMaster: true },
+  { name: "sm-1", isScrumMaster: true },
+  { name: "sm-2", isScrumMaster: true },
+];
+
+type MemberDef = {
+  userName: string;
+  role: string | null;
+  isScrumMaster: boolean;
+};
+
+const memberDefs: MemberDef[] = [
+  { userName: "dev-1", role: "DEV", isScrumMaster: false },
+  { userName: "dev-2", role: "DEV", isScrumMaster: false },
+  { userName: "dev-3", role: "DEV", isScrumMaster: false },
+  { userName: "dev-4", role: "DEV", isScrumMaster: false },
+  { userName: "dev-5", role: "DEV", isScrumMaster: false },
+  { userName: "qa-1", role: "QA", isScrumMaster: false },
+  { userName: "qa-2", role: "QA", isScrumMaster: false },
+  { userName: "qa-3", role: "QA", isScrumMaster: false },
+  { userName: "qa-4", role: "QA", isScrumMaster: false },
+  { userName: "qa-5", role: "QA", isScrumMaster: false },
+  { userName: "dev-sm-1", role: "DEV", isScrumMaster: true },
+  { userName: "dev-sm-2", role: "DEV", isScrumMaster: true },
+  { userName: "qa-sm-1", role: "QA", isScrumMaster: true },
+  { userName: "qa-sm-2", role: "QA", isScrumMaster: true },
+  { userName: "sm-1", role: null, isScrumMaster: true },
+  { userName: "sm-2", role: null, isScrumMaster: true },
 ];
 
 type TicketDef = {
@@ -401,8 +420,8 @@ async function main() {
     users.map((u) =>
       prisma.user.upsert({
         where: { name: u.name },
-        update: { role: u.role, isScrumMaster: u.isScrumMaster },
-        create: { name: u.name, passwordHash, role: u.role, isScrumMaster: u.isScrumMaster },
+        update: { isScrumMaster: u.isScrumMaster },
+        create: { name: u.name, passwordHash, isScrumMaster: u.isScrumMaster },
       })
     )
   );
@@ -422,15 +441,29 @@ async function main() {
   }
 
   console.log("Seeding project members...");
-  for (const user of createdUsers) {
-    const memberSm = user.isScrumMaster;
+  for (const def of memberDefs) {
+    const user = createdUsers.find((u) => u.name === def.userName)!;
     await prisma.projectMember.upsert({
       where: { userId_projectId: { userId: user.id, projectId: project.id } },
-      update: { isScrumMaster: memberSm },
-      create: { userId: user.id, projectId: project.id, isScrumMaster: memberSm },
+      update: { role: def.role, isScrumMaster: def.isScrumMaster },
+      create: { userId: user.id, projectId: project.id, role: def.role, isScrumMaster: def.isScrumMaster },
     });
   }
-  console.log(`All ${createdUsers.length} members added to project.`);
+  console.log(`All ${memberDefs.length} members added to project.`);
+
+  console.log("Seeding invite links...");
+  const existingLinks = await prisma.inviteLink.count({ where: { projectId: project.id } });
+  if (existingLinks === 0) {
+    await prisma.inviteLink.create({
+      data: { projectId: project.id, grantsSm: false, label: "Для команды" },
+    });
+    await prisma.inviteLink.create({
+      data: { projectId: project.id, grantsSm: true, label: "Для SM" },
+    });
+    console.log("Created 2 invite links.");
+  } else {
+    console.log(`Invite links already exist (${existingLinks}).`);
+  }
 
   console.log("Seeding tickets...");
   let created = 0;

@@ -32,14 +32,14 @@ export async function GET(request: NextRequest) {
   const members = await prisma.projectMember.findMany({
     where: {
       projectId,
-      user: { role: { in: ["DEV", "QA"] } },
+      role: { in: ["DEV", "QA"] },
     },
-    include: { user: { select: { id: true, name: true, role: true } } },
-    orderBy: { user: { role: "asc" } },
+    include: { user: { select: { id: true, name: true } } },
+    orderBy: { user: { name: "asc" } },
   });
 
   const sortedMembers = members
-    .map((m) => m.user)
+    .map((m) => ({ id: m.user.id, name: m.user.name, role: m.role! }))
     .sort((a, b) => {
       if (a.role === b.role) return a.name.localeCompare(b.name);
       return a.role === "DEV" ? -1 : 1;
@@ -119,6 +119,6 @@ export async function GET(request: NextRequest) {
       userId: t.userId,
       date: t.date.toISOString(),
     })),
-    currentUser: { id: user.id, role: user.role, isScrumMaster: user.isScrumMaster || membership.isScrumMaster },
+    currentUser: { id: user.id, role: membership.role, isScrumMaster: user.isScrumMaster || membership.isScrumMaster },
   });
 }

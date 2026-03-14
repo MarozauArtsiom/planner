@@ -29,7 +29,7 @@ export async function GET(
 
   const members = await prisma.projectMember.findMany({
     where: { projectId },
-    include: { user: { select: { id: true, name: true, role: true, isScrumMaster: true } } },
+    include: { user: { select: { id: true, name: true, isScrumMaster: true } } },
     orderBy: { joinedAt: "asc" },
   });
 
@@ -37,7 +37,7 @@ export async function GET(
     members: members.map((m) => ({
       userId: m.user.id,
       name: m.user.name,
-      role: m.user.role,
+      role: m.role,
       isScrumMaster: m.isScrumMaster,
       userIsScrumMaster: m.user.isScrumMaster,
     })),

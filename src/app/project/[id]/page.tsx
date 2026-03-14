@@ -28,7 +28,7 @@ export default async function ProjectPage({
       projectId={id}
       projectName={project.name}
       userName={user.name}
-      userRole={user.role}
+      userRole={membership.role}
       hasSmRights={smRights}
       userIsSm={user.isScrumMaster}
     />

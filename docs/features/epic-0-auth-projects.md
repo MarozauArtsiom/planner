@@ -7,26 +7,26 @@
 ## Что реализовано
 
 ### Авторизация
-- Регистрация `/register` — имя, пароль, выбор командной роли (DEV/QA, опционально) + чекбокс «Scrum Master» (опционально). Нужно выбрать хотя бы что-то.
+- Регистрация `/register` — имя, пароль + чекбокс «Scrum Master» (опционально, даёт право создавать проекты). Роль (DEV/QA) выбирается при присоединении к проекту.
 - Вход `/login` — логин + пароль. Пароли хранятся как bcrypt-хеш.
 - Сессия — httpOnly cookie `userId`, 1 год.
 - Logout — кнопка на всех страницах, очищает cookie.
 - Поддержка `?redirect=` query param для возврата после логина (например, из invite-ссылки).
 
 ### Проекты
-- Модель `Project` с owner (SM) и `inviteToken`.
-- Модель `ProjectMember` — связь User и Project.
+- Модель `Project` с owner (SM).
+- Модель `ProjectMember` — связь User и Project с per-project `role` (DEV/QA/null) и `isScrumMaster`.
 - Пользователь с `isScrumMaster = true` создаёт проект на главной странице `/`. Автоматически становится участником с per-project SM-правами.
 - Все данные (Sprint, Ticket, EstimationSession) привязаны к проекту через `projectId`.
 - Главная страница показывает список проектов текущего пользователя.
 
 ### Invite-ссылки
-- `inviteToken` хранится на модели `Project`, генерируется при создании.
+- Модель `InviteLink` — множественные invite-ссылки на проект. Каждая ссылка имеет уникальный `token` и флаг `grantsSm` (даёт ли SM-права при присоединении).
 - Формат: `/invite/{token}`.
+- При присоединении пользователь выбирает свою роль в проекте (DEV/QA/без роли). SM-права назначаются автоматически на основе `grantsSm`.
 - Незалогиненный пользователь → redirect на `/login?redirect=/invite/{token}`.
-- Залогиненный, не участник → страница "Присоединиться к {project.name}?".
 - Залогиненный, уже участник → redirect на `/project/{id}`.
-- Любой SM проекта (по роли или per-project флагу) может перегенерировать токен в настройках проекта `/project/{id}/settings`.
+- SM может создавать и удалять invite-ссылки в настройках проекта `/project/{id}/settings`.
 
 ## Ключевые файлы
 
@@ -35,15 +35,16 @@
 | `prisma/schema.prisma` | User (login, passwordHash), Project, ProjectMember |
 | `src/lib/password.ts` | bcrypt hash/verify обёртки |
 | `src/app/actions/auth.ts` | register, login, logout server actions |
-| `src/app/actions/project.ts` | createProject, joinProject, regenerateInviteToken |
+| `src/app/actions/project.ts` | createProject, joinProject, createInviteLink, deleteInviteLink, toggleMemberSm, updateMemberRole |
 | `src/app/login/page.tsx` | Страница входа |
 | `src/app/register/page.tsx` | Страница регистрации |
 | `src/app/page.tsx` | Список проектов |
 | `src/app/project/[id]/page.tsx` | Board проекта |
-| `src/app/project/[id]/settings/page.tsx` | Настройки проекта (invite-ссылка, управление SM-правами) |
+| `src/app/project/[id]/settings/page.tsx` | Настройки проекта (invite-ссылки, роли, SM-права) |
 | `src/app/api/project/[id]/members/route.ts` | API списка участников проекта |
-| `src/app/invite/[token]/page.tsx` | Присоединение по invite |
-| `src/app/api/project/[id]/invite/route.ts` | API для получения invite URL |
+| `src/app/invite/[token]/page.tsx` | Присоединение по invite с выбором роли |
+| `src/app/invite/[token]/invite-form.tsx` | Клиентская форма выбора роли при присоединении |
+| `src/app/api/project/[id]/invite/route.ts` | API списка invite-ссылок проекта |
 | `src/proxy.ts` | Auth guard — redirect на /login |
 
 ## История изменений
@@ -58,3 +59,7 @@
 | 2026-03-14 | refactor | Удалён /onboarding, заменён на /register + /login |
 | 2026-03-14 | feat | Секция управления SM-правами участников в настройках проекта |
 | 2026-03-14 | refactor | Invite API и regenerateToken проверяют SM-права вместо ownerId |
+| 2026-03-15 | refactor | Per-project роли: `ProjectMember.role` вместо `User.role` |
+| 2026-03-15 | feat | Множественные invite-ссылки: модель `InviteLink` с `grantsSm` вместо `Project.inviteToken` |
+| 2026-03-15 | feat | Выбор роли (DEV/QA) при присоединении к проекту |
+| 2026-03-15 | feat | SM может менять роль участника и SM-права в настройках проекта |

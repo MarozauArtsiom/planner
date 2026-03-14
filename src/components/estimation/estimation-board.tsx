@@ -14,7 +14,6 @@ import { VotingForm } from "./voting-form";
 import { VotingResults } from "./voting-results";
 import { VoteDetails } from "./vote-details";
 import { TicketForm } from "./ticket-form";
-import { SmModeToggle, useSmMode } from "@/components/sm-mode-toggle";
 import {
   setActiveTicket,
   revealVotes,
@@ -47,10 +46,8 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsSp, setStatsSp] = useState<number | null>(null);
 
-  const hasSmRights = state?.currentUser.isScrumMaster ?? false;
+  const isSM = state?.currentUser.isScrumMaster ?? false;
   const canVote = !!state?.currentUser.role;
-  const { smMode, toggle } = useSmMode(projectId, hasSmRights);
-  const isSM = hasSmRights && (canVote ? smMode : true);
 
   const act = useCallback(
     (action: () => Promise<unknown>) => {
@@ -144,9 +141,6 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
           </div>
 
           <div className="flex items-center gap-3">
-            {hasSmRights && canVote && (
-              <SmModeToggle smMode={smMode} onToggle={toggle} />
-            )}
             <span className="hidden text-sm text-zinc-600 dark:text-zinc-300 sm:inline">
               {state.currentUser.name}
             </span>
@@ -157,7 +151,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                 {ROLE_LABELS[state.currentUser.role] ?? state.currentUser.role}
               </span>
             )}
-            {hasSmRights && (
+            {isSM && (
               <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
                 SM
               </span>
