@@ -6,6 +6,7 @@ import {
   startOfDay,
   eachDayOfInterval,
   format,
+  formatISO,
 } from "date-fns";
 
 const WEDNESDAY = 3;
@@ -54,6 +55,16 @@ export function formatMonthDay(date: Date): string {
   return format(date, "d MMM");
 }
 
+export function toDateKey(date: Date): string {
+  return formatISO(startOfDay(date), { representation: "date" });
+}
+
+export function isNonWorkingDay(date: Date, timeOffDates?: Set<string>): boolean {
+  if (dateFnsIsWeekend(date)) return true;
+  if (timeOffDates && timeOffDates.has(toDateKey(date))) return true;
+  return false;
+}
+
 export function spToDurationDays(sp: number): number {
   if (sp <= 1) return 2;
   if (sp <= 2) return 3;
@@ -64,6 +75,7 @@ export function spToDurationDays(sp: number): number {
 export function workingDaysToCalendarSpan(
   start: Date,
   workingDays: number,
+  timeOffDates?: Set<string>,
 ): number {
   if (workingDays <= 0) return 1;
   let current = startOfDay(start);
@@ -72,7 +84,7 @@ export function workingDaysToCalendarSpan(
 
   while (remaining > 0) {
     span++;
-    if (!dateFnsIsWeekend(current)) {
+    if (!isNonWorkingDay(current, timeOffDates)) {
       remaining--;
     }
     current = addDays(current, 1);
@@ -81,13 +93,17 @@ export function workingDaysToCalendarSpan(
   return span;
 }
 
-export function countWorkingDays(start: Date, end: Date): number {
+export function countWorkingDays(
+  start: Date,
+  end: Date,
+  timeOffDates?: Set<string>,
+): number {
   let current = startOfDay(start);
   const endDay = startOfDay(end);
   let count = 0;
 
   while (current <= endDay) {
-    if (!dateFnsIsWeekend(current)) {
+    if (!isNonWorkingDay(current, timeOffDates)) {
       count++;
     }
     current = addDays(current, 1);

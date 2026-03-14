@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useEffect, useCallback, useRef, useState } from "react";
+import { useTransition, useEffect, useCallback, useRef, useState, useMemo } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -24,10 +24,12 @@ import {
   resizeAssignment as resizeAssignmentAction,
   deleteAssignment,
 } from "@/app/actions/assignment";
+import { toggleTimeOff } from "@/app/actions/timeoff";
 import {
   generateDayColumns,
   workingDaysToCalendarSpan,
   countWorkingDays,
+  toDateKey,
 } from "@/lib/date-utils";
 
 interface Props {
@@ -66,6 +68,12 @@ export function GanttBoard({ projectId, isSM }: Props) {
       store.syncFromServer(state.assignments);
     }
   }, [state?.assignments]);
+
+  useEffect(() => {
+    if (state?.timeOffs) {
+      store.syncTimeOffs(state.timeOffs);
+    }
+  }, [state?.timeOffs]);
 
   const allDays =
     state?.sprints.flatMap((s) =>
@@ -182,16 +190,44 @@ export function GanttBoard({ projectId, isSM }: Props) {
     }
   }
 
+  const buildUserTimeOffSet = useCallback(
+    (userId: string): Set<string> => {
+      const storeState = useGanttStore.getState();
+      const set = new Set<string>();
+      for (const t of storeState.timeOffs) {
+        if (t.userId === userId) set.add(toDateKey(new Date(t.date)));
+      }
+      return set;
+    },
+    [],
+  );
+
+  const handleToggleTimeOff = useCallback(
+    (userId: string, date: Date) => {
+      startTransition(async () => {
+        const result = await toggleTimeOff(projectId, userId, date.toISOString());
+        if (result && "error" in result) {
+          alert(result.error);
+        }
+        refresh();
+      });
+    },
+    [projectId, refresh, startTransition],
+  );
+
   const handleResizeStart = useCallback(
     (assignmentId: string, edge: "left" | "right", e: React.PointerEvent) => {
       const freshStore = useGanttStore.getState();
       const assignment = freshStore.assignments.find((a) => a.id === assignmentId);
       if (!assignment) return;
 
+      const userTimeOffs = buildUserTimeOffSet(assignment.userId);
+
       const origStart = new Date(assignment.startDate);
       const origCalSpan = workingDaysToCalendarSpan(
         origStart,
         assignment.durationDays,
+        userTimeOffs,
       );
       const origEndDate = addDays(origStart, origCalSpan - 1);
 
@@ -212,18 +248,25 @@ export function GanttBoard({ projectId, isSM }: Props) {
         const deltaX = ev.clientX - resizeRef.current.startX;
         const deltaCols = Math.round(deltaX / COLUMN_WIDTH);
 
+        const currentAssignment = useGanttStore.getState().assignments.find(
+          (a) => a.id === resizeRef.current!.assignmentId,
+        );
+        const timeOffs = currentAssignment
+          ? buildUserTimeOffSet(currentAssignment.userId)
+          : undefined;
+
         if (resizeRef.current.edge === "right") {
           const newCalSpan = Math.max(1, resizeRef.current.origCalSpan + deltaCols);
           const rStart = new Date(resizeRef.current.origStartDate);
           const newEnd = addDays(rStart, newCalSpan - 1);
-          const newWorkDays = countWorkingDays(rStart, newEnd);
+          const newWorkDays = countWorkingDays(rStart, newEnd, timeOffs);
           useGanttStore.getState().optimisticResize(resizeRef.current.assignmentId, newWorkDays);
         } else {
           const rOrigStart = new Date(resizeRef.current.origStartDate);
           const rOrigEnd = new Date(resizeRef.current.origEndDate);
           const newStart = addDays(rOrigStart, deltaCols);
           if (newStart > rOrigEnd) return;
-          const newWorkDays = countWorkingDays(newStart, rOrigEnd);
+          const newWorkDays = countWorkingDays(newStart, rOrigEnd, timeOffs);
           useGanttStore.getState().optimisticResize(
             resizeRef.current.assignmentId,
             Math.max(1, newWorkDays),
@@ -404,11 +447,13 @@ export function GanttBoard({ projectId, isSM }: Props) {
             sprints={state.sprints}
             members={state.members}
             assignments={store.assignments}
+            timeOffs={state.timeOffs ?? []}
             projectId={projectId}
             isSM={isSM}
             onResizeStart={isSM ? handleResizeStart : undefined}
             onContextMenu={isSM ? handleBlockContextMenu : undefined}
             onDelete={isSM ? handleDeleteBlock : undefined}
+            onToggleTimeOff={isSM ? handleToggleTimeOff : undefined}
           />
 
           {isSM && <GanttBacklog tickets={state.backlog} />}

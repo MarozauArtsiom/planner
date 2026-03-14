@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-03-14 (Эпик 5: Учёт отсутствия / Time-offs)
+- **feat(timeoff):** Server action `toggleTimeOff` — SM переключает нерабочие дни кликом по ячейке дня в строке сотрудника
+- **feat(board-api):** GET /api/board/state возвращает `timeOffs` для участников проекта в диапазоне спринтов
+- **feat(gantt-grid):** Визуальная штриховка (repeating-linear-gradient) на ячейках нерабочих дней, cursor pointer для SM
+- **feat(date-utils):** `isNonWorkingDay`, `toDateKey`; `workingDaysToCalendarSpan`/`countWorkingDays` принимают опциональный Set time-off дат
+- **feat(gantt-calspan):** Блоки задач растягиваются через дни отпуска — net рабочая длительность сохраняется
+- **feat(gantt-store):** Zustand store хранит `timeOffs`, time-off-aware Finish-to-Start в optimisticMove/optimisticResize
+- **feat(assignment):** Server-side actions (`assignTicket`, `moveAssignment`, `resizeAssignment`) учитывают time-off при F2S расчётах
+
 ## 2026-03-14 (Эпик 4: Hover-popover, multi-assign, backlog split)
 - **feat(gantt-blocks):** Hover-popover на блоках: полная информация + кнопка удаления, на узких блоках (1-2 дня) inline-кнопка скрыта
 - **feat(backlog):** Бэклог разделён на «Не назначено» и «На доске» (collapsible секции)

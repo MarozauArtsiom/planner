@@ -1,13 +1,26 @@
 import { create } from "zustand";
 import { addDays } from "date-fns";
-import type { BoardAssignment } from "@/hooks/use-board-polling";
-import { workingDaysToCalendarSpan } from "@/lib/date-utils";
+import type { BoardAssignment, BoardTimeOff } from "@/hooks/use-board-polling";
+import { workingDaysToCalendarSpan, toDateKey } from "@/lib/date-utils";
+
+function buildUserTimeOffSet(
+  timeOffs: BoardTimeOff[],
+  userId: string,
+): Set<string> {
+  const set = new Set<string>();
+  for (const t of timeOffs) {
+    if (t.userId === userId) set.add(toDateKey(new Date(t.date)));
+  }
+  return set;
+}
 
 interface GanttStore {
   assignments: BoardAssignment[];
+  timeOffs: BoardTimeOff[];
   isDragging: boolean;
 
   syncFromServer(serverAssignments: BoardAssignment[]): void;
+  syncTimeOffs(serverTimeOffs: BoardTimeOff[]): void;
   setDragging(dragging: boolean): void;
 
   optimisticAdd(assignment: BoardAssignment): void;
@@ -31,11 +44,16 @@ interface GanttStore {
 
 export const useGanttStore = create<GanttStore>((set, get) => ({
   assignments: [],
+  timeOffs: [],
   isDragging: false,
 
   syncFromServer(serverAssignments) {
     if (get().isDragging) return;
     set({ assignments: serverAssignments });
+  },
+
+  syncTimeOffs(serverTimeOffs) {
+    set({ timeOffs: serverTimeOffs });
   },
 
   setDragging(dragging) {
@@ -55,6 +73,8 @@ export const useGanttStore = create<GanttStore>((set, get) => ({
       const newStart = new Date(startDate).getTime();
       const deltaMs = newStart - oldStart;
 
+      const devTimeOffs = buildUserTimeOffSet(s.timeOffs, userId);
+
       return {
         assignments: s.assignments.map((a) => {
           if (a.id === id) {
@@ -67,6 +87,7 @@ export const useGanttStore = create<GanttStore>((set, get) => ({
             const devCalSpan = workingDaysToCalendarSpan(
               new Date(startDate),
               target.durationDays,
+              devTimeOffs,
             );
             const devEnd = addDays(new Date(startDate), devCalSpan);
             const effectiveStart =
@@ -80,30 +101,43 @@ export const useGanttStore = create<GanttStore>((set, get) => ({
   },
 
   optimisticResize(id, durationDays, startDate) {
-    set((s) => ({
-      assignments: s.assignments.map((a) => {
-        if (a.id === id) {
-          return {
-            ...a,
-            durationDays,
-            ...(startDate ? { startDate } : {}),
-          };
-        }
-        if (a.parentAssignmentId === id) {
-          const parentStart = startDate
-            ? new Date(startDate)
-            : new Date(
-                s.assignments.find((p) => p.id === id)?.startDate ?? a.startDate,
-              );
-          const devCalSpan = workingDaysToCalendarSpan(parentStart, durationDays);
-          const devEnd = addDays(parentStart, devCalSpan);
-          if (new Date(a.startDate) < devEnd) {
-            return { ...a, startDate: devEnd.toISOString() };
+    set((s) => {
+      const parent = s.assignments.find((a) => a.id === id);
+      const parentUserId = parent?.userId;
+      const parentTimeOffs = parentUserId
+        ? buildUserTimeOffSet(s.timeOffs, parentUserId)
+        : undefined;
+
+      return {
+        assignments: s.assignments.map((a) => {
+          if (a.id === id) {
+            return {
+              ...a,
+              durationDays,
+              ...(startDate ? { startDate } : {}),
+            };
           }
-        }
-        return a;
-      }),
-    }));
+          if (a.parentAssignmentId === id) {
+            const pStart = startDate
+              ? new Date(startDate)
+              : new Date(
+                  s.assignments.find((p) => p.id === id)?.startDate ??
+                    a.startDate,
+                );
+            const devCalSpan = workingDaysToCalendarSpan(
+              pStart,
+              durationDays,
+              parentTimeOffs,
+            );
+            const devEnd = addDays(pStart, devCalSpan);
+            if (new Date(a.startDate) < devEnd) {
+              return { ...a, startDate: devEnd.toISOString() };
+            }
+          }
+          return a;
+        }),
+      };
+    });
   },
 
   optimisticRemove(id) {

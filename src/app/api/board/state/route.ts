@@ -60,6 +60,22 @@ export async function GET(request: NextRequest) {
     },
   });
 
+  const memberIds = sortedMembers.map((m) => m.id);
+
+  const timeOffs =
+    sprints.length > 0
+      ? await prisma.timeOff.findMany({
+          where: {
+            userId: { in: memberIds },
+            date: {
+              gte: sprints[0].startDate,
+              lte: sprints[sprints.length - 1].endDate,
+            },
+          },
+          select: { userId: true, date: true },
+        })
+      : [];
+
   const allTickets = await prisma.ticket.findMany({
     where: { projectId, storyPoints: { not: null } },
     include: {
@@ -99,6 +115,10 @@ export async function GET(request: NextRequest) {
       parentAssignmentId: a.parentAssignmentId,
     })),
     backlog,
+    timeOffs: timeOffs.map((t) => ({
+      userId: t.userId,
+      date: t.date.toISOString(),
+    })),
     currentUser: { id: user.id, role: user.role },
   });
 }

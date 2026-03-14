@@ -1,22 +1,33 @@
 "use client";
 
+import { useMemo } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
 import type {
   BoardSprint,
   BoardMember,
   BoardAssignment,
+  BoardTimeOff,
 } from "@/hooks/use-board-polling";
-import { generateDayColumns, isWeekend, workingDaysToCalendarSpan } from "@/lib/date-utils";
+import {
+  generateDayColumns,
+  isWeekend,
+  workingDaysToCalendarSpan,
+  toDateKey,
+} from "@/lib/date-utils";
 import { COLUMN_WIDTH } from "./gantt-header";
 import { ROW_HEIGHT } from "./gantt-member-list";
 import { GanttTicketBlock } from "./gantt-ticket-block";
 import { computeSubRows } from "@/lib/gantt-layout";
 
+const TIME_OFF_HATCHING =
+  "repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(161,161,170,0.25) 3px, rgba(161,161,170,0.25) 6px)";
+
 interface Props {
   sprints: BoardSprint[];
   members: BoardMember[];
   assignments: BoardAssignment[];
+  timeOffs: BoardTimeOff[];
   isSM: boolean;
   rowHeights: Map<string, number>;
   onResizeStart?: (
@@ -26,6 +37,7 @@ interface Props {
   ) => void;
   onContextMenu?: (id: string, e: React.MouseEvent) => void;
   onDelete?: (id: string) => void;
+  onToggleTimeOff?: (userId: string, date: Date) => void;
 }
 
 function DroppableMemberRow({
@@ -35,9 +47,11 @@ function DroppableMemberRow({
   firstSprintStart,
   rowHeight,
   isSM,
+  memberTimeOffKeys,
   onResizeStart,
   onContextMenu,
   onDelete,
+  onToggleTimeOff,
 }: {
   member: BoardMember;
   allDays: Date[];
@@ -45,9 +59,11 @@ function DroppableMemberRow({
   firstSprintStart: Date;
   rowHeight: number;
   isSM: boolean;
+  memberTimeOffKeys: Set<string>;
   onResizeStart?: Props["onResizeStart"];
   onContextMenu?: Props["onContextMenu"];
   onDelete?: Props["onDelete"];
+  onToggleTimeOff?: Props["onToggleTimeOff"];
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: `member-${member.id}`,
@@ -68,6 +84,9 @@ function DroppableMemberRow({
         {allDays.map((day, colIdx) => {
           const weekend = isWeekend(day);
           const lastInSprint = (colIdx + 1) % 7 === 0;
+          const isTimeOff = !weekend && memberTimeOffKeys.has(toDateKey(day));
+          const canToggle = isSM && !weekend;
+
           return (
             <div
               key={day.toISOString()}
@@ -77,8 +96,17 @@ function DroppableMemberRow({
                 lastInSprint
                   ? "border-r-2 border-zinc-300 dark:border-zinc-600"
                   : "border-r border-zinc-50 dark:border-zinc-800/50"
-              }`}
-              style={{ width: COLUMN_WIDTH, height: rowHeight }}
+              } ${canToggle ? "cursor-pointer" : ""}`}
+              style={{
+                width: COLUMN_WIDTH,
+                height: rowHeight,
+                ...(isTimeOff ? { background: TIME_OFF_HATCHING } : {}),
+              }}
+              onClick={
+                canToggle
+                  ? () => onToggleTimeOff?.(member.id, day)
+                  : undefined
+              }
             />
           );
         })}
@@ -93,6 +121,7 @@ function DroppableMemberRow({
         const calSpan = workingDaysToCalendarSpan(
           new Date(a.startDate),
           a.durationDays,
+          memberTimeOffKeys,
         );
 
         return (
@@ -122,11 +151,13 @@ export function GanttGrid({
   sprints,
   members,
   assignments,
+  timeOffs,
   isSM,
   rowHeights,
   onResizeStart,
   onContextMenu,
   onDelete,
+  onToggleTimeOff,
 }: Props) {
   const allDays = sprints.flatMap((s) =>
     generateDayColumns(new Date(s.startDate), new Date(s.endDate)),
@@ -136,6 +167,19 @@ export function GanttGrid({
     sprints.length > 0
       ? startOfDay(new Date(sprints[0].startDate))
       : startOfDay(new Date());
+
+  const timeOffByUser = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const t of timeOffs) {
+      let set = map.get(t.userId);
+      if (!set) {
+        set = new Set();
+        map.set(t.userId, set);
+      }
+      set.add(toDateKey(new Date(t.date)));
+    }
+    return map;
+  }, [timeOffs]);
 
   const devs = members.filter((m) => m.role === "DEV");
   const qas = members.filter((m) => m.role === "QA");
@@ -176,6 +220,7 @@ export function GanttGrid({
           (a) => a.userId === row.member.id,
         );
         const height = rowHeights.get(row.member.id) ?? ROW_HEIGHT;
+        const memberTimeOffKeys = timeOffByUser.get(row.member.id) ?? new Set();
 
         return (
           <DroppableMemberRow
@@ -186,9 +231,11 @@ export function GanttGrid({
             firstSprintStart={firstSprintStart}
             rowHeight={height}
             isSM={isSM}
+            memberTimeOffKeys={memberTimeOffKeys}
             onResizeStart={onResizeStart}
             onContextMenu={onContextMenu}
             onDelete={onDelete}
+            onToggleTimeOff={onToggleTimeOff}
           />
         );
       })}

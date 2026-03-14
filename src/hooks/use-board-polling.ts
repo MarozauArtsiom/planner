@@ -39,11 +39,17 @@ export interface BacklogTicket {
   hasQaAssignment: boolean;
 }
 
+export interface BoardTimeOff {
+  userId: string;
+  date: string;
+}
+
 export interface BoardState {
   sprints: BoardSprint[];
   members: BoardMember[];
   assignments: BoardAssignment[];
   backlog: BacklogTicket[];
+  timeOffs: BoardTimeOff[];
   currentUser: { id: string; role: string };
 }
 

@@ -6,6 +6,7 @@ import type {
   BoardSprint,
   BoardMember,
   BoardAssignment,
+  BoardTimeOff,
 } from "@/hooks/use-board-polling";
 import { GanttHeader, COLUMN_WIDTH } from "./gantt-header";
 import { GanttMemberList, MEMBER_COL_WIDTH } from "./gantt-member-list";
@@ -21,6 +22,7 @@ interface Props {
   sprints: BoardSprint[];
   members: BoardMember[];
   assignments: BoardAssignment[];
+  timeOffs: BoardTimeOff[];
   projectId: string;
   isSM: boolean;
   onResizeStart?: (
@@ -30,17 +32,20 @@ interface Props {
   ) => void;
   onContextMenu?: (id: string, e: React.MouseEvent) => void;
   onDelete?: (id: string) => void;
+  onToggleTimeOff?: (userId: string, date: Date) => void;
 }
 
 export function GanttTimeline({
   sprints,
   members,
   assignments,
+  timeOffs,
   projectId,
   isSM,
   onResizeStart,
   onContextMenu,
   onDelete,
+  onToggleTimeOff,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const didScrollRef = useRef(false);
@@ -118,11 +123,13 @@ export function GanttTimeline({
               sprints={sprints}
               members={members}
               assignments={assignments}
+              timeOffs={timeOffs}
               isSM={isSM}
               rowHeights={rowHeights}
               onResizeStart={onResizeStart}
               onContextMenu={onContextMenu}
               onDelete={onDelete}
+              onToggleTimeOff={onToggleTimeOff}
             />
             <GanttDependencyLines
               assignments={assignments}

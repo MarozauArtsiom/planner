@@ -3,8 +3,16 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { spToDurationDays, workingDaysToCalendarSpan } from "@/lib/date-utils";
+import { spToDurationDays, workingDaysToCalendarSpan, toDateKey } from "@/lib/date-utils";
 import { addDays } from "date-fns";
+
+async function getUserTimeOffSet(userId: string): Promise<Set<string>> {
+  const records = await prisma.timeOff.findMany({
+    where: { userId },
+    select: { date: true },
+  });
+  return new Set(records.map((r) => toDateKey(r.date)));
+}
 
 async function requireProjectSM(projectId: string) {
   const userId = await getSession();
@@ -72,7 +80,8 @@ export async function assignTicket(
   });
 
   if (qaUserId) {
-    const devCalSpan = workingDaysToCalendarSpan(devStart, devDays);
+    const devTimeOffs = await getUserTimeOffSet(devUserId);
+    const devCalSpan = workingDaysToCalendarSpan(devStart, devDays, devTimeOffs);
     const qaStart = addDays(devStart, devCalSpan);
     await prisma.ticketAssignment.create({
       data: {
@@ -114,9 +123,11 @@ export async function moveAssignment(
   });
 
   if (assignment.childAssignments.length > 0 && deltaMs !== 0) {
+    const devTimeOffs = await getUserTimeOffSet(newUserId);
     const devCalSpan = workingDaysToCalendarSpan(
       new Date(newStartDateISO),
       assignment.durationDays,
+      devTimeOffs,
     );
     const devEnd = addDays(new Date(newStartDateISO), devCalSpan);
 
@@ -166,7 +177,8 @@ export async function resizeAssignment(
   const effectiveStart = newStartDateISO
     ? new Date(newStartDateISO)
     : assignment.startDate;
-  const calSpan = workingDaysToCalendarSpan(effectiveStart, newDurationDays);
+  const devTimeOffs = await getUserTimeOffSet(assignment.userId);
+  const calSpan = workingDaysToCalendarSpan(effectiveStart, newDurationDays, devTimeOffs);
   const devEnd = addDays(effectiveStart, calSpan);
 
   for (const child of assignment.childAssignments) {
