@@ -46,7 +46,7 @@ function RegisterForm() {
         <form action={formAction} className="space-y-5">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Ваше имя
+              Ник
             </label>
             <input
               id="name"
@@ -54,22 +54,8 @@ function RegisterForm() {
               type="text"
               required
               autoFocus
-              placeholder="Например, Алексей"
-              className="mt-1 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus:border-blue-400"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="login" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Логин
-            </label>
-            <input
-              id="login"
-              name="login"
-              type="text"
-              required
               autoComplete="username"
-              placeholder="mylogin"
+              placeholder="Например, Алексей"
               className="mt-1 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus:border-blue-400"
             />
           </div>

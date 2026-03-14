@@ -40,14 +40,14 @@ function LoginForm() {
         <form action={formAction} className="space-y-5">
           <div>
             <label
-              htmlFor="login"
+              htmlFor="name"
               className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
-              Логин
+              Ник
             </label>
             <input
-              id="login"
-              name="login"
+              id="name"
+              name="name"
               type="text"
               required
               autoFocus
