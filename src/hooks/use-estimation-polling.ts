@@ -46,6 +46,12 @@ export interface EstimationResults {
   voteCount: number;
 }
 
+export interface VoterStatus {
+  oderId: string;
+  name: string;
+  voted: boolean;
+}
+
 export interface SessionState {
   sessionId: string | null;
   status: "IDLE" | "VOTING" | "REVEALED";
@@ -53,6 +59,7 @@ export interface SessionState {
   votes: VoteProgress;
   results: EstimationResults | null;
   individualVotes: IndividualVote[] | null;
+  voterStatus: VoterStatus[] | null;
   tickets: TicketListItem[];
   currentUser: {
     id: string;

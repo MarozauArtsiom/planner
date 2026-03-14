@@ -37,10 +37,13 @@ export async function GET(request: NextRequest) {
     },
   });
 
+  const isSM = user.isScrumMaster || membership.isScrumMaster;
+
   let submittedCount = 0;
   let currentUserVoted = false;
   let results = null;
   let individualVotes = null;
+  let voterStatus = null;
 
   if (session?.activeTicketId) {
     const votes = await prisma.vote.findMany({
@@ -50,6 +53,20 @@ export async function GET(request: NextRequest) {
 
     submittedCount = votes.length;
     currentUserVoted = votes.some((v) => v.userId === userId);
+
+    if (session.status === "VOTING" && isSM) {
+      const teamMembers = await prisma.projectMember.findMany({
+        where: { projectId, user: { role: { in: ["DEV", "QA"] } } },
+        include: { user: { select: { id: true, name: true } } },
+        orderBy: { user: { name: "asc" } },
+      });
+      const votedIds = new Set(votes.map((v) => v.userId));
+      voterStatus = teamMembers.map((m) => ({
+        oderId: m.user.id,
+        name: m.user.name,
+        voted: votedIds.has(m.user.id),
+      }));
+    }
 
     if (session.status === "REVEALED") {
       const calc = calculateEstimation(votes);
@@ -107,12 +124,13 @@ export async function GET(request: NextRequest) {
     },
     results,
     individualVotes,
+    voterStatus,
     tickets,
     currentUser: {
       id: user.id,
       name: user.name,
       role: user.role,
-      isScrumMaster: user.isScrumMaster || membership.isScrumMaster,
+      isScrumMaster: isSM,
     },
   });
 }

@@ -8,6 +8,7 @@ import {
   type VoteProgress,
   type EstimationResults,
   type IndividualVote,
+  type VoterStatus,
 } from "@/hooks/use-estimation-polling";
 import { VotingForm } from "./voting-form";
 import { VotingResults } from "./voting-results";
@@ -347,6 +348,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                       {isSM && (
                         <SMVotingPanel
                           votes={state.votes}
+                          voterStatus={state.voterStatus}
                           onReveal={() => act(() => revealVotes(projectId))}
                           isPending={isPending}
                         />
@@ -530,7 +532,17 @@ function TicketInfo({ ticket }: { ticket: SessionTicket }) {
   );
 }
 
-function SMVotingPanel({ votes, onReveal, isPending }: { votes: VoteProgress; onReveal: () => void; isPending: boolean }) {
+function SMVotingPanel({
+  votes,
+  voterStatus,
+  onReveal,
+  isPending,
+}: {
+  votes: VoteProgress;
+  voterStatus: VoterStatus[] | null;
+  onReveal: () => void;
+  isPending: boolean;
+}) {
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
       <h3 className="mb-4 text-sm font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">Голосование</h3>
@@ -545,6 +557,29 @@ function SMVotingPanel({ votes, onReveal, isPending }: { votes: VoteProgress; on
           </div>
         </div>
       </div>
+      {voterStatus && voterStatus.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {voterStatus.map((v) => (
+            <span
+              key={v.oderId}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium ${
+                v.voted
+                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+              }`}
+            >
+              {v.voted ? (
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+              ) : (
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-current opacity-40" />
+              )}
+              {v.name}
+            </span>
+          ))}
+        </div>
+      )}
       {votes.totalVoters === 0 && (
         <p className="mb-4 text-sm text-amber-600 dark:text-amber-400">Нет участников с ролью Dev/QA для голосования</p>
       )}

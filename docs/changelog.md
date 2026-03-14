@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-03-14 (Seed: тестовые данные)
+- **chore(seed):** Prisma seed скрипт `prisma/seed.ts` — 16 пользователей (5 DEV, 5 QA, 2 DEV+SM, 2 QA+SM, 2 pure SM), пароль `1234`
+- **chore(seed):** Проект «Todo List App» с 23 тикетами (Auth, CRUD, Lists, Rich Content, Collaboration, UX)
+- **chore(prisma-config):** `prisma.config.ts` — настроена seed-команда `npx tsx prisma/seed.ts`
+
 ## 2026-03-14 (Estimation: расширенная статистика)
 - **refactor(estimation-engine):** Медиана вместо среднего — устойчивость к выбросам
 - **feat(estimation):** Таблица индивидуальных голосов «Голоса команды» для всех участников после раскрытия

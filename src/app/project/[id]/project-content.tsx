@@ -4,6 +4,7 @@ import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { GanttBoard } from "@/components/gantt/gantt-board";
 import { SmModeToggle, useSmMode } from "@/components/sm-mode-toggle";
+import { EstimationToast } from "@/components/estimation-toast";
 
 const ROLE_LABELS: Record<string, string> = {
   DEV: "Developer",
@@ -107,6 +108,8 @@ export function ProjectContent({
       <main className="flex flex-1 overflow-hidden">
         <GanttBoard projectId={projectId} isSM={effectiveSM} />
       </main>
+
+      <EstimationToast projectId={projectId} />
     </div>
   );
 }
