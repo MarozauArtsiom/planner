@@ -15,9 +15,35 @@ export interface BoardMember {
   role: "DEV" | "QA";
 }
 
+export interface BoardAssignment {
+  id: string;
+  ticketId: string;
+  ticketTitle: string;
+  ticketExternalId: string | null;
+  storyPoints: number;
+  devEffortProportion: number;
+  userId: string;
+  startDate: string;
+  durationDays: number;
+  type: "DEV" | "QA";
+  parentAssignmentId: string | null;
+}
+
+export interface BacklogTicket {
+  id: string;
+  title: string;
+  externalId: string | null;
+  storyPoints: number;
+  devEffortProportion: number;
+  hasDevAssignment: boolean;
+  hasQaAssignment: boolean;
+}
+
 export interface BoardState {
   sprints: BoardSprint[];
   members: BoardMember[];
+  assignments: BoardAssignment[];
+  backlog: BacklogTicket[];
   currentUser: { id: string; role: string };
 }
 

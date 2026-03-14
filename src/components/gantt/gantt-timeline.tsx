@@ -2,23 +2,46 @@
 
 import { useRef, useEffect } from "react";
 import { differenceInCalendarDays, startOfDay } from "date-fns";
-import type { BoardSprint, BoardMember } from "@/hooks/use-board-polling";
+import type {
+  BoardSprint,
+  BoardMember,
+  BoardAssignment,
+} from "@/hooks/use-board-polling";
 import { GanttHeader, COLUMN_WIDTH } from "./gantt-header";
 import { GanttMemberList, MEMBER_COL_WIDTH } from "./gantt-member-list";
 import { GanttGrid } from "./gantt-grid";
+import { GanttDependencyLines } from "./gantt-dependency-lines";
 import { TodayMarker } from "./today-marker";
 import { generateDayColumns } from "@/lib/date-utils";
+import { computeRowHeights } from "@/lib/gantt-layout";
 
 const HEADER_HEIGHT = 60;
 
 interface Props {
   sprints: BoardSprint[];
   members: BoardMember[];
+  assignments: BoardAssignment[];
   projectId: string;
   isSM: boolean;
+  onResizeStart?: (
+    id: string,
+    edge: "left" | "right",
+    e: React.PointerEvent,
+  ) => void;
+  onContextMenu?: (id: string, e: React.MouseEvent) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function GanttTimeline({ sprints, members, projectId, isSM }: Props) {
+export function GanttTimeline({
+  sprints,
+  members,
+  assignments,
+  projectId,
+  isSM,
+  onResizeStart,
+  onContextMenu,
+  onDelete,
+}: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const didScrollRef = useRef(false);
 
@@ -27,29 +50,39 @@ export function GanttTimeline({ sprints, members, projectId, isSM }: Props) {
   );
   const totalWidth = allDays.length * COLUMN_WIDTH;
 
+  const rowHeights = computeRowHeights(members, assignments);
+
   useEffect(() => {
     if (didScrollRef.current || !scrollRef.current || sprints.length === 0)
       return;
 
-    const container = scrollRef.current;
     const today = startOfDay(new Date());
     const firstStart = startOfDay(new Date(sprints[0].startDate));
-    const lastEnd = startOfDay(new Date(sprints[sprints.length - 1].endDate));
+
+    const currentSprint = sprints.find((s) => {
+      const sStart = startOfDay(new Date(s.startDate));
+      const sEnd = startOfDay(new Date(s.endDate));
+      return today >= sStart && today <= sEnd;
+    });
 
     let targetScroll: number;
 
-    if (today >= firstStart && today <= lastEnd) {
-      const dayOffset = differenceInCalendarDays(today, firstStart);
-      targetScroll =
-        MEMBER_COL_WIDTH +
-        dayOffset * COLUMN_WIDTH -
-        container.clientWidth / 2 +
-        COLUMN_WIDTH / 2;
+    if (currentSprint) {
+      const sprintStartOffset = differenceInCalendarDays(
+        startOfDay(new Date(currentSprint.startDate)),
+        firstStart,
+      );
+      targetScroll = sprintStartOffset * COLUMN_WIDTH;
     } else {
-      targetScroll = container.scrollWidth - container.clientWidth;
+      const lastSprint = sprints[sprints.length - 1];
+      const lastStartOffset = differenceInCalendarDays(
+        startOfDay(new Date(lastSprint.startDate)),
+        firstStart,
+      );
+      targetScroll = lastStartOffset * COLUMN_WIDTH;
     }
 
-    container.scrollLeft = Math.max(0, targetScroll);
+    scrollRef.current.scrollLeft = Math.max(0, targetScroll);
     didScrollRef.current = true;
   }, [sprints]);
 
@@ -58,8 +91,15 @@ export function GanttTimeline({ sprints, members, projectId, isSM }: Props) {
       ref={scrollRef}
       className="relative flex-1 overflow-x-auto overflow-y-auto"
     >
-      <div className="relative flex" style={{ minWidth: MEMBER_COL_WIDTH + totalWidth }}>
-        <GanttMemberList members={members} headerHeight={HEADER_HEIGHT} />
+      <div
+        className="relative flex"
+        style={{ minWidth: MEMBER_COL_WIDTH + totalWidth }}
+      >
+        <GanttMemberList
+          members={members}
+          headerHeight={HEADER_HEIGHT}
+          rowHeights={rowHeights}
+        />
 
         <div className="relative" style={{ width: totalWidth }}>
           <div
@@ -74,7 +114,26 @@ export function GanttTimeline({ sprints, members, projectId, isSM }: Props) {
           </div>
 
           <div className="relative">
-            <GanttGrid sprints={sprints} members={members} />
+            <GanttGrid
+              sprints={sprints}
+              members={members}
+              assignments={assignments}
+              isSM={isSM}
+              rowHeights={rowHeights}
+              onResizeStart={onResizeStart}
+              onContextMenu={onContextMenu}
+              onDelete={onDelete}
+            />
+            <GanttDependencyLines
+              assignments={assignments}
+              members={members}
+              firstSprintStart={
+                sprints.length > 0
+                  ? startOfDay(new Date(sprints[0].startDate))
+                  : startOfDay(new Date())
+              }
+              rowHeights={rowHeights}
+            />
             <TodayMarker sprints={sprints} headerHeight={0} />
           </div>
         </div>

@@ -53,3 +53,45 @@ export function formatDayNumber(date: Date): string {
 export function formatMonthDay(date: Date): string {
   return format(date, "d MMM");
 }
+
+export function spToDurationDays(sp: number): number {
+  if (sp <= 1) return 2;
+  if (sp <= 2) return 3;
+  if (sp <= 3) return 5;
+  return 8;
+}
+
+export function workingDaysToCalendarSpan(
+  start: Date,
+  workingDays: number,
+): number {
+  if (workingDays <= 0) return 1;
+  let current = startOfDay(start);
+  let remaining = workingDays;
+  let span = 0;
+
+  while (remaining > 0) {
+    span++;
+    if (!dateFnsIsWeekend(current)) {
+      remaining--;
+    }
+    current = addDays(current, 1);
+  }
+
+  return span;
+}
+
+export function countWorkingDays(start: Date, end: Date): number {
+  let current = startOfDay(start);
+  const endDay = startOfDay(end);
+  let count = 0;
+
+  while (current <= endDay) {
+    if (!dateFnsIsWeekend(current)) {
+      count++;
+    }
+    current = addDays(current, 1);
+  }
+
+  return Math.max(1, count);
+}

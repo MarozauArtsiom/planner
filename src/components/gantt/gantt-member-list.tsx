@@ -8,11 +8,16 @@ export const MEMBER_COL_WIDTH = 160;
 interface Props {
   members: BoardMember[];
   headerHeight: number;
+  rowHeights?: Map<string, number>;
 }
 
-export function GanttMemberList({ members, headerHeight }: Props) {
+export function GanttMemberList({ members, headerHeight, rowHeights }: Props) {
   const devs = members.filter((m) => m.role === "DEV");
   const qas = members.filter((m) => m.role === "QA");
+
+  function getHeight(memberId: string): number {
+    return rowHeights?.get(memberId) ?? ROW_HEIGHT;
+  }
 
   return (
     <div
@@ -41,8 +46,8 @@ export function GanttMemberList({ members, headerHeight }: Props) {
           {devs.map((m) => (
             <div
               key={m.id}
-              className="flex items-center border-b border-zinc-100 px-3 dark:border-zinc-800"
-              style={{ height: ROW_HEIGHT }}
+              className="flex items-start border-b border-zinc-100 px-3 pt-3.5 dark:border-zinc-800"
+              style={{ height: getHeight(m.id) }}
             >
               <span className="truncate text-sm text-zinc-700 dark:text-zinc-300">
                 {m.name}
@@ -62,8 +67,8 @@ export function GanttMemberList({ members, headerHeight }: Props) {
           {qas.map((m) => (
             <div
               key={m.id}
-              className="flex items-center border-b border-zinc-100 px-3 dark:border-zinc-800"
-              style={{ height: ROW_HEIGHT }}
+              className="flex items-start border-b border-zinc-100 px-3 pt-3.5 dark:border-zinc-800"
+              style={{ height: getHeight(m.id) }}
             >
               <span className="truncate text-sm text-zinc-700 dark:text-zinc-300">
                 {m.name}

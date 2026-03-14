@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-03-14 (Эпик 4: Hover-popover, multi-assign, backlog split)
+- **feat(gantt-blocks):** Hover-popover на блоках: полная информация + кнопка удаления, на узких блоках (1-2 дня) inline-кнопка скрыта
+- **feat(backlog):** Бэклог разделён на «Не назначено» и «На доске» (collapsible секции)
+- **feat(backlog):** Назначенные тикеты остаются draggable — можно назначить один тикет на нескольких разработчиков
+- **fix(backlog):** Убран read-only state для назначенных тикетов
+
+## 2026-03-14 (Эпик 4: Авто-сплит, уникальные цвета тикетов)
+- **feat(assignment):** Авто-разделение тикета на DEV + QA блоки при назначении из бэклога
+- **feat(ticket-colors):** Уникальный цвет фона для каждого тикета (палитра из 12 цветов)
+- **feat(gantt-blocks):** Бейджи DEV/QA на блоках, фон по цвету тикета вместо фиксированных indigo/emerald
+- **feat(backlog):** Карточки бэклога окрашены в цвет тикета
+- **refactor(assignment):** Удалён ручной split — разделение происходит автоматически
+
+## 2026-03-14 (Эпик 4: Гибкая диаграмма Ганта)
+- **feat(board-api):** Расширен GET /api/board/state — assignments + backlog в ответе polling
+- **feat(assignment):** Server actions: assignTicket, moveAssignment, resizeAssignment, splitTicketAssignment, deleteAssignment
+- **feat(gantt-store):** Zustand store для оптимистичного UI при drag/resize/split
+- **feat(gantt-backlog):** Collapsible sidebar с draggable карточками оценённых тикетов
+- **feat(gantt-dnd):** DndContext: drag тикета из бэклога на строку конкретного сотрудника, перемещение существующих блоков
+- **feat(gantt-blocks):** Ticket blocks с цветовым Dev/QA сплитом, SP → рабочие дни маппинг
+- **feat(gantt-multirow):** Interval packing для параллельных задач, динамические высоты строк
+- **feat(gantt-resize):** Resize handles с pointer events, spillover через границы спринтов
+- **feat(gantt-split):** Разделение Dev/QA через контекстное меню, SVG dependency lines (bezier)
+- **feat(gantt-deps):** Finish-to-Start каскад при перемещении Dev-блока
+- **fix(gantt-dnd):** Позиционирование при drag по левому краю блока, а не по курсору
+- **fix(gantt-working-days):** Длительность в рабочих днях — блоки перепрыгивают выходные
+- **feat(gantt-delete):** Кнопка удаления (×) на блоке при наведении
+- **chore(date-utils):** spToDurationDays, workingDaysToCalendarSpan, countWorkingDays
+- **chore(gantt-layout):** computeSubRows, computeRowHeights — алгоритмы размещения блоков
+
 ## 2026-03-14 (Эпик 2: Сессия оценки — дополнение)
 - **feat(estimation):** Визуальная индикация оценённых тикетов в списке: зелёный фон, чекмарк-иконка, SP-бейдж в emerald-цвете; кнопка «Переоценить» для уже оценённых
 

@@ -45,6 +45,38 @@ export async function GET(request: NextRequest) {
       return a.role === "DEV" ? -1 : 1;
     });
 
+  const assignments = await prisma.ticketAssignment.findMany({
+    where: { ticket: { projectId } },
+    include: {
+      ticket: {
+        select: {
+          id: true,
+          title: true,
+          externalId: true,
+          storyPoints: true,
+          devEffortProportion: true,
+        },
+      },
+    },
+  });
+
+  const allTickets = await prisma.ticket.findMany({
+    where: { projectId, storyPoints: { not: null } },
+    include: {
+      ticketAssignments: { select: { type: true } },
+    },
+  });
+
+  const backlog = allTickets.map((t) => ({
+    id: t.id,
+    title: t.title,
+    externalId: t.externalId,
+    storyPoints: t.storyPoints!,
+    devEffortProportion: t.devEffortProportion ?? 0.5,
+    hasDevAssignment: t.ticketAssignments.some((a) => a.type === "DEV"),
+    hasQaAssignment: t.ticketAssignments.some((a) => a.type === "QA"),
+  }));
+
   return NextResponse.json({
     sprints: sprints.map((s) => ({
       id: s.id,
@@ -53,6 +85,20 @@ export async function GET(request: NextRequest) {
       endDate: s.endDate.toISOString(),
     })),
     members: sortedMembers,
+    assignments: assignments.map((a) => ({
+      id: a.id,
+      ticketId: a.ticket.id,
+      ticketTitle: a.ticket.title,
+      ticketExternalId: a.ticket.externalId,
+      storyPoints: a.ticket.storyPoints ?? 1,
+      devEffortProportion: a.ticket.devEffortProportion ?? 0.5,
+      userId: a.userId,
+      startDate: a.startDate.toISOString(),
+      durationDays: a.durationDays,
+      type: a.type,
+      parentAssignmentId: a.parentAssignmentId,
+    })),
+    backlog,
     currentUser: { id: user.id, role: user.role },
   });
 }
