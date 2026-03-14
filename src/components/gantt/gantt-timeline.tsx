@@ -94,7 +94,7 @@ export function GanttTimeline({
   return (
     <div
       ref={scrollRef}
-      className="relative flex-1 overflow-x-auto overflow-y-auto"
+      className="gantt-scroll relative flex-1 overflow-x-auto overflow-y-auto"
     >
       <div
         className="relative flex"
