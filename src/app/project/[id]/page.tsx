@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/current-user";
 import { isScrumMaster } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
 import { logout } from "@/app/actions/auth";
+import { GanttBoard } from "@/components/gantt/gantt-board";
 
 const ROLE_LABELS: Record<string, string> = {
   DEV: "Developer",
@@ -38,9 +39,9 @@ export default async function ProjectPage({
   const sm = isScrumMaster(user);
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
+    <div className="flex h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
+      <header className="flex-shrink-0 border-b border-zinc-200 bg-white px-6 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/"
@@ -94,21 +95,8 @@ export default async function ProjectPage({
         </div>
       </header>
 
-      <main className="flex flex-1 items-center justify-center px-4">
-        <div className="w-full max-w-3xl space-y-6 text-center">
-          <div className="rounded-xl border border-zinc-200 bg-white p-12 dark:border-zinc-800 dark:bg-zinc-900">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-              <svg className="h-6 w-6 text-zinc-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25a2.25 2.25 0 0 1-2.25-2.25v-2.25Z" />
-              </svg>
-            </div>
-            <p className="text-zinc-500 dark:text-zinc-400">
-              {sm
-                ? "Диаграмма Ганта — вы можете создавать спринты, назначать и перетаскивать задачи"
-                : "Диаграмма Ганта — режим просмотра. Изменения Scrum Master отображаются в реальном времени"}
-            </p>
-          </div>
-        </div>
+      <main className="flex flex-1 overflow-hidden">
+        <GanttBoard projectId={id} isSM={sm} />
       </main>
     </div>
   );

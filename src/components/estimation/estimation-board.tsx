@@ -171,63 +171,77 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                 )}
               </p>
             ) : (
-              state.tickets.map((ticket) => (
-                <div
-                  key={ticket.id}
-                  className={`group mb-1 rounded-lg border px-3 py-2.5 transition-colors ${
-                    ticket.isActive
-                      ? "border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30"
-                      : "border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      {ticket.externalId && (
-                        <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
-                          {ticket.externalId}
-                        </span>
-                      )}
-                      <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">
-                        {ticket.title}
-                      </p>
-                      {ticket.storyPoints != null && (
-                        <span className="mt-0.5 inline-flex rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                          {ticket.storyPoints} SP
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex flex-shrink-0 items-center gap-1">
-                      {ticket.isActive ? (
-                        <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
-                          Активен
-                        </span>
-                      ) : isSM ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => act(() => setActiveTicket(projectId, ticket.id))}
-                            disabled={isPending}
-                            className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 transition-all hover:bg-blue-700 group-hover:opacity-100 disabled:opacity-50 dark:bg-blue-500"
-                          >
-                            Оценить
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => act(() => deleteTicket(projectId, ticket.id))}
-                            disabled={isPending}
-                            className="rounded-md p-1 text-zinc-300 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100 dark:text-zinc-600 dark:hover:text-red-400"
-                          >
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              state.tickets.map((ticket) => {
+                const estimated = ticket.storyPoints != null;
+                return (
+                  <div
+                    key={ticket.id}
+                    className={`group mb-1 rounded-lg border px-3 py-2.5 transition-colors ${
+                      ticket.isActive
+                        ? "border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/30"
+                        : estimated
+                          ? "border-emerald-100 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/20"
+                          : "border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 items-start gap-2">
+                        {estimated && !ticket.isActive && (
+                          <div className="mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
+                            <svg className="h-2.5 w-2.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                             </svg>
-                          </button>
-                        </>
-                      ) : null}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          {ticket.externalId && (
+                            <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
+                              {ticket.externalId}
+                            </span>
+                          )}
+                          <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                            {ticket.title}
+                          </p>
+                          {estimated && (
+                            <span className="mt-0.5 inline-flex rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                              {ticket.storyPoints} SP
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-shrink-0 items-center gap-1">
+                        {ticket.isActive ? (
+                          <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
+                            Активен
+                          </span>
+                        ) : isSM ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => act(() => setActiveTicket(projectId, ticket.id))}
+                              disabled={isPending}
+                              className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 transition-all hover:bg-blue-700 group-hover:opacity-100 disabled:opacity-50 dark:bg-blue-500"
+                            >
+                              {estimated ? "Переоценить" : "Оценить"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => act(() => deleteTicket(projectId, ticket.id))}
+                              disabled={isPending}
+                              className="rounded-md p-1 text-zinc-300 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100 dark:text-zinc-600 dark:hover:text-red-400"
+                            >
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </aside>
