@@ -21,8 +21,6 @@
     "registerPending": "Регистрация...",
     "noAccount": "Нет аккаунта?",
     "hasAccount": "Уже есть аккаунт?",
-    "scrumMaster": "Scrum Master",
-    "scrumMasterDesc": "Создание проектов и управление планированием",
     "logoutButton": "Выйти из аккаунта"
   },
   "userMenu": {
@@ -283,7 +281,6 @@
     "invalidCredentials": "Неверный ник или пароль",
     "loginError": "Ошибка входа: {message}",
     "unknownError": "Неизвестная ошибка",
-    "onlySmCanCreateProjects": "Только Scrum Master может создавать проекты",
     "projectNameRequired": "Название проекта обязательно",
     "linkInvalid": "Ссылка недействительна",
     "onlySmCanCreateLinks": "Только Scrum Master может создавать ссылки",

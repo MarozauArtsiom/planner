@@ -7,28 +7,12 @@ const adapter = new PrismaBetterSqlite3({
 });
 const prisma = new PrismaClient({ adapter });
 
-type UserDef = {
-  name: string;
-  isScrumMaster: boolean;
-};
-
-const users: UserDef[] = [
-  { name: "dev-1", isScrumMaster: false },
-  { name: "dev-2", isScrumMaster: false },
-  { name: "dev-3", isScrumMaster: false },
-  { name: "dev-4", isScrumMaster: false },
-  { name: "dev-5", isScrumMaster: false },
-  { name: "qa-1", isScrumMaster: false },
-  { name: "qa-2", isScrumMaster: false },
-  { name: "qa-3", isScrumMaster: false },
-  { name: "qa-4", isScrumMaster: false },
-  { name: "qa-5", isScrumMaster: false },
-  { name: "dev-sm-1", isScrumMaster: true },
-  { name: "dev-sm-2", isScrumMaster: true },
-  { name: "qa-sm-1", isScrumMaster: true },
-  { name: "qa-sm-2", isScrumMaster: true },
-  { name: "sm-1", isScrumMaster: true },
-  { name: "sm-2", isScrumMaster: true },
+const userNames = [
+  "dev-1", "dev-2", "dev-3", "dev-4", "dev-5",
+  "qa-1", "qa-2", "qa-3", "qa-4", "qa-5",
+  "dev-sm-1", "dev-sm-2",
+  "qa-sm-1", "qa-sm-2",
+  "sm-1", "sm-2",
 ];
 
 type MemberDef = {
@@ -417,11 +401,11 @@ async function main() {
 
   console.log("Seeding users...");
   const createdUsers = await Promise.all(
-    users.map((u) =>
+    userNames.map((name) =>
       prisma.user.upsert({
-        where: { name: u.name },
-        update: { isScrumMaster: u.isScrumMaster },
-        create: { name: u.name, passwordHash, isScrumMaster: u.isScrumMaster },
+        where: { name },
+        update: {},
+        create: { name, passwordHash },
       })
     )
   );

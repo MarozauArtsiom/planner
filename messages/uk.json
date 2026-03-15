@@ -21,8 +21,6 @@
     "registerPending": "Реєстрація...",
     "noAccount": "Немає акаунта?",
     "hasAccount": "Вже є акаунт?",
-    "scrumMaster": "Scrum Master",
-    "scrumMasterDesc": "Створення проєктів та управління плануванням",
     "logoutButton": "Вийти з акаунта"
   },
   "userMenu": {
@@ -283,7 +281,6 @@
     "invalidCredentials": "Невірний нік або пароль",
     "loginError": "Помилка входу: {message}",
     "unknownError": "Невідома помилка",
-    "onlySmCanCreateProjects": "Тільки Scrum Master може створювати проєкти",
     "projectNameRequired": "Назва проєкту обов'язкова",
     "linkInvalid": "Посилання недійсне",
     "onlySmCanCreateLinks": "Тільки Scrum Master може створювати посилання",

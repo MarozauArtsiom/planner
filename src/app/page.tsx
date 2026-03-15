@@ -34,8 +34,6 @@ export default async function HomePage() {
     orderBy: { joinedAt: "desc" },
   });
 
-  const sm = user.isScrumMaster;
-
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
       <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
@@ -44,7 +42,7 @@ export default async function HomePage() {
             {tc("appName")}
           </h1>
 
-          <UserMenu userName={user.name} isScrumMaster={user.isScrumMaster} />
+          <UserMenu userName={user.name} />
         </div>
       </header>
 
@@ -59,82 +57,34 @@ export default async function HomePage() {
                 {t("yourProjects")}
               </h2>
             </div>
-            {sm && (
-              <form action={handleCreateProject} className="flex items-center">
-                <input
-                  name="name"
-                  type="text"
-                  required
-                  placeholder={t("projectNamePlaceholder")}
-                  className="mr-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-                />
-                <button
-                  type="submit"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  {t("createProject")}
-                </button>
-              </form>
-            )}
+            <form action={handleCreateProject} className="flex items-center">
+              <input
+                name="name"
+                type="text"
+                required
+                placeholder={t("projectNamePlaceholder")}
+                className="mr-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+              />
+              <button
+                type="submit"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              >
+                {t("createProject")}
+              </button>
+            </form>
           </div>
 
           {memberships.length === 0 ? (
-            sm ? (
-              <div className="rounded-xl border border-zinc-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                  <svg className="h-6 w-6 text-zinc-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
-                  </svg>
-                </div>
-                <p className="text-zinc-500 dark:text-zinc-400">
-                  {t("noProjectsSm")}
-                </p>
+            <div className="rounded-xl border border-zinc-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <svg className="h-6 w-6 text-zinc-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                </svg>
               </div>
-            ) : (
-              <div className="rounded-xl border border-zinc-200 bg-white p-10 dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="mx-auto max-w-md text-center">
-                  <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/40">
-                    <svg className="h-7 w-7 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                    </svg>
-                  </div>
-
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                    {t("noProjectsTitle")}
-                  </h3>
-                  <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                    {t("noProjectsDesc")}
-                  </p>
-                </div>
-
-                <div className="mx-auto mt-8 grid max-w-lg grid-cols-3 gap-4">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-sm font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                      1
-                    </div>
-                    <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                      {t("step1")}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-center text-center">
-                    <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-sm font-bold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                      2
-                    </div>
-                    <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                      {t("step2")}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-center text-center">
-                    <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
-                      3
-                    </div>
-                    <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                      {t("step3")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )
+              <p className="text-zinc-500 dark:text-zinc-400">
+                {t("noProjectsSm")}
+              </p>
+            </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {memberships.map(({ project, isScrumMaster: memberSm }) => (

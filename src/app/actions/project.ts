@@ -38,9 +38,6 @@ async function requireProjectSM(projectId: string) {
 export async function createProject(formData: FormData) {
   const t = await getTranslations("errors");
   const user = await requireUser();
-  if (!user.isScrumMaster) {
-    return { error: t("onlySmCanCreateProjects") };
-  }
 
   const name = (formData.get("name") as string)?.trim();
   if (!name) return { error: t("projectNameRequired") };

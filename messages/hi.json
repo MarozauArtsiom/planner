@@ -21,8 +21,6 @@
     "registerPending": "रजिस्टर हो रहा है...",
     "noAccount": "खाता नहीं है?",
     "hasAccount": "पहले से खाता है?",
-    "scrumMaster": "Scrum Master",
-    "scrumMasterDesc": "प्रोजेक्ट बनाएं और योजना प्रबंधित करें",
     "logoutButton": "लॉगआउट"
   },
   "userMenu": {
@@ -283,7 +281,6 @@
     "invalidCredentials": "गलत उपयोगकर्ता नाम या पासवर्ड",
     "loginError": "लॉगिन त्रुटि: {message}",
     "unknownError": "अज्ञात त्रुटि",
-    "onlySmCanCreateProjects": "केवल Scrum Master प्रोजेक्ट बना सकता है",
     "projectNameRequired": "प्रोजेक्ट का नाम आवश्यक है",
     "linkInvalid": "लिंक अमान्य है",
     "onlySmCanCreateLinks": "केवल Scrum Master लिंक बना सकता है",

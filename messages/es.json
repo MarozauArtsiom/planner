@@ -21,8 +21,6 @@
     "registerPending": "Registrando...",
     "noAccount": "¿No tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?",
-    "scrumMaster": "Scrum Master",
-    "scrumMasterDesc": "Crear proyectos y gestionar la planificación",
     "logoutButton": "Cerrar sesión"
   },
   "userMenu": {
@@ -283,7 +281,6 @@
     "invalidCredentials": "Usuario o contraseña incorrectos",
     "loginError": "Error de inicio de sesión: {message}",
     "unknownError": "Error desconocido",
-    "onlySmCanCreateProjects": "Solo el Scrum Master puede crear proyectos",
     "projectNameRequired": "El nombre del proyecto es obligatorio",
     "linkInvalid": "El enlace no es válido",
     "onlySmCanCreateLinks": "Solo el Scrum Master puede crear enlaces",

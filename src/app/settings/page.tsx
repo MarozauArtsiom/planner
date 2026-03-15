@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getTranslations, getLocale } from "next-intl/server";
 import { getCurrentUser } from "@/lib/current-user";
-import { updateUserProfile } from "@/app/actions/user";
 import { setLocale } from "@/app/actions/locale";
 import { UserMenu } from "@/components/user-menu";
 
@@ -29,7 +28,6 @@ export default async function SettingsPage({
   const locale = await getLocale();
 
   const t = await getTranslations("settings");
-  const ta = await getTranslations("auth");
   const tc = await getTranslations("common");
 
   return (
@@ -50,7 +48,7 @@ export default async function SettingsPage({
             </h1>
           </div>
 
-          <UserMenu userName={user.name} isScrumMaster={user.isScrumMaster} />
+          <UserMenu userName={user.name} />
         </div>
       </header>
 
@@ -67,28 +65,6 @@ export default async function SettingsPage({
                 {user.name}
               </p>
             </div>
-
-            <form action={updateUserProfile} className="space-y-4">
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 transition-colors select-none hover:border-amber-300 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:border-amber-700">
-                <input
-                  type="checkbox"
-                  name="isScrumMaster"
-                  defaultChecked={user.isScrumMaster}
-                  className="h-4 w-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600"
-                />
-                <div>
-                  <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{ta("scrumMaster")}</span>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">{ta("scrumMasterDesc")}</p>
-                </div>
-              </label>
-
-              <button
-                type="submit"
-                className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:bg-blue-500 dark:hover:bg-blue-600"
-              >
-                {tc("save")}
-              </button>
-            </form>
 
             {saved && (
               <p className="mt-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700 dark:bg-green-950/50 dark:text-green-400">

@@ -2,27 +2,21 @@
 
 ## Бизнес-цель
 
-Позволить нескольким участникам проекта иметь права Скрам Мастера. SM — не отдельная роль, а дополнительный флаг: при регистрации пользователь выбирает командную роль (DEV/QA) и опционально отмечает «Scrum Master». Все участники видны на Ганте, все голосуют, а SM-права дают возможность управлять доской и сессиями оценки.
+Позволить нескольким участникам проекта иметь права Скрам Мастера. SM-права существуют только на уровне проекта (per-project). Создатель проекта автоматически становится owner и SM. Дополнительные SM назначаются через per-project toggle или invite-ссылки с флагом `grantsSm`.
 
 ## Что реализовано
 
-### SM как флаг, а не роль
-- `User.role` = `"DEV" | "QA" | null` — командная роль (опциональна).
-- `User.isScrumMaster: Boolean` — глобальный SM-флаг (создание проектов, глобальные права).
+### SM только per-project
+- Глобальной SM-роли нет. Любой пользователь может создавать проекты.
 - `ProjectMember.isScrumMaster: Boolean` — per-project SM-флаг.
-- SM-права = `project.ownerId === userId || membership.isScrumMaster`. Глобальный `User.isScrumMaster` только для создания проектов.
+- SM-права = `project.ownerId === userId || membership.isScrumMaster`.
 - Чистый SM (role=null, isScrumMaster=true) — не виден на Ганте, не голосует, всегда в SM-режиме.
-- DEV/QA + SM — виден на Ганте, голосует, переключатель «Команда / SM».
-
-### Регистрация и настройки
-- Регистрация: 2 карточки DEV/QA (опциональные, можно не выбирать) + чекбокс «Scrum Master». Нужно выбрать хотя бы что-то.
-- Настройки профиля: dropdown DEV/QA/«Не выбрана» + чекбокс SM.
-- `SCRUM_MASTER` удалён из `VALID_ROLES`.
+- DEV/QA/BA + SM — виден на Ганте, голосует, имеет расширенный UI управления.
 
 ### Per-project SM-права
 - Поле `isScrumMaster: Boolean` на модели `ProjectMember` — per-project флаг.
 - Owner проекта автоматически получает `isScrumMaster: true` при создании.
-- Страница настроек проекта: секция «Участники» — toggle SM-прав для каждого, бейдж «SM» для глобальных SM.
+- Страница настроек проекта: секция «Участники» — toggle SM-прав для каждого, бейдж «Owner» для владельца.
 
 ### Переключатель режима
 - Пользователь с SM-правами видит переключатель «Команда / Скрам Мастер» в шапке.
@@ -38,13 +32,9 @@
 
 | Файл | Назначение |
 |---|---|
-| `prisma/schema.prisma` | `User.isScrumMaster`, `ProjectMember.isScrumMaster` |
+| `prisma/schema.prisma` | `ProjectMember.isScrumMaster` |
 | `src/lib/permissions.ts` | `hasSmRights(userId, membership, project)` |
-| `src/app/actions/auth.ts` | `register` — role (DEV/QA) + isScrumMaster |
-| `src/app/actions/user.ts` | `updateUserProfile` — role + isScrumMaster |
-| `src/app/actions/project.ts` | `createProject` (user.isScrumMaster), `toggleMemberSm` |
-| `src/app/register/page.tsx` | UI: 2 карточки + чекбокс SM |
-| `src/app/settings/page.tsx` | UI: dropdown + чекбокс SM |
+| `src/app/actions/project.ts` | `createProject`, `toggleMemberSm` |
 | `src/components/sm-mode-toggle.tsx` | `SmModeToggle` + `useSmMode` hook |
 | `src/app/project/[id]/project-content.tsx` | Client wrapper с toggle |
 | `src/components/estimation/estimation-board.tsx` | Estimation с toggle |
@@ -64,3 +54,4 @@
 | 2026-03-14 | refactor | `User.role` стал nullable — чистый SM (role=null) без Ганта и голосования |
 | 2026-03-15 | refactor | Глобальный `isScrumMaster` только для создания проектов. SM-права в проекте = owner или `ProjectMember.isScrumMaster` |
 | 2026-03-15 | feat | Защита владельца: SM-статус owner нельзя отозвать, бейдж «Owner» в настройках |
+| 2026-03-15 | refactor | Удалён `User.isScrumMaster`. SM-права только per-project. Любой пользователь создаёт проекты |

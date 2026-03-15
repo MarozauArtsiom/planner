@@ -39,7 +39,7 @@ export default async function InvitePage({
             {tc("appName")}
           </h1>
 
-          <UserMenu userName={user.name} isScrumMaster={user.isScrumMaster} />
+          <UserMenu userName={user.name} />
         </div>
       </header>
 

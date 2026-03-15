@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useActionState } from "react";
-import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -22,11 +21,9 @@ function RegisterForm() {
   const tc = useTranslations("common");
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
-  const [isSm, setIsSm] = useState(false);
 
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
     async (_prev, formData) => {
-      if (isSm) formData.set("isScrumMaster", "on");
       formData.set("redirectTo", redirectTo);
       return await register(formData);
     },
@@ -75,28 +72,6 @@ function RegisterForm() {
               className="mt-1 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus:border-blue-400"
             />
           </div>
-
-          <label className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 px-4 py-4 transition-all select-none ${
-            isSm
-              ? "border-amber-400 bg-amber-50 dark:border-amber-600 dark:bg-amber-950/30"
-              : "border-zinc-200 bg-white hover:border-amber-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-amber-700"
-          }`}>
-            <input
-              type="checkbox"
-              checked={isSm}
-              onChange={(e) => setIsSm(e.target.checked)}
-              className="h-4 w-4 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600"
-            />
-            <div className="flex items-center gap-2">
-              <svg className="h-5 w-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
-              </svg>
-              <div>
-                <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">{t("scrumMaster")}</span>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">{t("scrumMasterDesc")}</p>
-              </div>
-            </div>
-          </label>
 
           {state?.error && (
             <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-950/50 dark:text-red-400">

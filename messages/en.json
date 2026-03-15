@@ -21,8 +21,6 @@
     "registerPending": "Signing up...",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
-    "scrumMaster": "Scrum Master",
-    "scrumMasterDesc": "Create projects and manage planning",
     "logoutButton": "Sign out"
   },
   "userMenu": {
@@ -283,7 +281,6 @@
     "invalidCredentials": "Invalid username or password",
     "loginError": "Login error: {message}",
     "unknownError": "Unknown error",
-    "onlySmCanCreateProjects": "Only Scrum Master can create projects",
     "projectNameRequired": "Project name is required",
     "linkInvalid": "Link is invalid",
     "onlySmCanCreateLinks": "Only Scrum Master can create links",

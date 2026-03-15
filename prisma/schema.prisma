@@ -12,7 +12,6 @@ model User {
   passwordHash  String
   name          String   @unique
   role          String?  // "DEV" | "QA" | "BA" | null (pure SM)
-  isScrumMaster Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

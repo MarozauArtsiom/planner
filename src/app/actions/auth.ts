@@ -10,7 +10,6 @@ export async function register(formData: FormData) {
   const t = await getTranslations("errors");
   const name = (formData.get("name") as string)?.trim();
   const password = formData.get("password") as string;
-  const isScrumMaster = formData.get("isScrumMaster") === "on";
   const redirectTo = (formData.get("redirectTo") as string) || "/";
 
   if (!name || name.length < 2)
@@ -24,7 +23,7 @@ export async function register(formData: FormData) {
 
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
-      data: { passwordHash, name, isScrumMaster },
+      data: { passwordHash, name },
     });
 
     await setSession(user.id);

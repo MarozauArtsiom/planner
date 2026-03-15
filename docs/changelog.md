@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-03-15 (Удаление глобальной роли SM)
+- **refactor(schema):** Удалено поле `User.isScrumMaster` — SM-права теперь только per-project (`ProjectMember.isScrumMaster` + `project.ownerId`)
+- **refactor(auth):** Упрощена регистрация — только имя + пароль, без чекбокса SM
+- **refactor(project):** Любой авторизованный пользователь может создавать проекты. Создатель = owner + SM автоматически
+- **refactor(settings):** Удалён SM-toggle из настроек профиля (`/settings`). Удалён `updateUserProfile` action
+- **refactor(api):** Удалено поле `userIsScrumMaster` из ответа `GET /api/project/[id]/members`
+- **refactor(i18n):** Удалены ключи `auth.scrumMaster`, `auth.scrumMasterDesc`, `errors.onlySmCanCreateProjects`
+- **chore(prd):** PRD v6.2 — обновлены секции авторизации, ролей, проектов, эпика 6
+- **chore(docs):** Обновлены epic-1, epic-6, tech-architecture
+
 ## 2026-03-15 (Deployment: Vercel + Turso)
 - **feat(infra):** Добавлен `@prisma/adapter-libsql` и `@libsql/client` для Turso (libSQL) в проде
 - **feat(infra):** Условный выбор адаптера в `src/lib/db.ts`: Turso (prod) / better-sqlite3 (local)
