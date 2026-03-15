@@ -1,14 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { logout } from "@/app/actions/auth";
+import { useTranslations } from "next-intl";
 import { GanttBoard } from "@/components/gantt/gantt-board";
 import { EstimationToast } from "@/components/estimation-toast";
-
-const ROLE_LABELS: Record<string, string> = {
-  DEV: "Developer",
-  QA: "QA Engineer",
-};
+import { UserMenu } from "@/components/user-menu";
 
 const ROLE_STYLES: Record<string, string> = {
   DEV: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
@@ -32,7 +28,16 @@ export function ProjectContent({
   hasSmRights,
   userIsSm,
 }: Props) {
+  const t = useTranslations("project");
   const effectiveSM = hasSmRights;
+
+  const roleBadge = userRole ? (
+    <span
+      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_STYLES[userRole] ?? ""}`}
+    >
+      {userRole === "DEV" ? t("roleDev") : userRole === "QA" ? t("roleQa") : userRole}
+    </span>
+  ) : undefined;
 
   return (
     <div className="flex h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
@@ -53,47 +58,27 @@ export function ProjectContent({
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-zinc-600 dark:text-zinc-300">
-                {userName}
-              </span>
-              {userRole && (
-                <span
-                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_STYLES[userRole] ?? ""}`}
-                >
-                  {ROLE_LABELS[userRole] ?? userRole}
-                </span>
-              )}
-              {(userIsSm || hasSmRights) && (
-                <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-                  SM
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3 border-l border-zinc-200 pl-4 dark:border-zinc-700">
+            <div className="flex items-center gap-3 border-r border-zinc-200 pr-4 dark:border-zinc-700">
               <Link
                 href={`/project/${projectId}/estimation`}
                 className="text-sm text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
               >
-                Оценка
+                {t("estimation")}
               </Link>
               {hasSmRights && (
                 <Link
                   href={`/project/${projectId}/settings`}
                   className="text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
                 >
-                  Настройки
+                  {t("settings")}
                 </Link>
               )}
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="text-sm text-zinc-400 transition-colors hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400"
-                >
-                  Выйти
-                </button>
-              </form>
             </div>
+            <UserMenu
+              userName={userName}
+              isScrumMaster={userIsSm || hasSmRights}
+              roleBadge={roleBadge}
+            />
           </div>
         </div>
       </header>

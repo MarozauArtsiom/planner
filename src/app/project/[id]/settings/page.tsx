@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   createInviteLink,
   deleteInviteLink,
@@ -13,17 +14,7 @@ import {
   updateSpScale,
   resetSpScale,
 } from "@/app/actions/project";
-import { renderSprintName, DAY_NAMES } from "@/lib/date-utils";
-
-const ROLE_LABELS: Record<string, string> = {
-  DEV: "Developer",
-  QA: "QA Engineer",
-};
-
-const ROLE_ACTIVE: Record<string, string> = {
-  DEV: "border-indigo-400 bg-indigo-100 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300",
-  QA: "border-emerald-400 bg-emerald-100 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300",
-};
+import { renderSprintName } from "@/lib/date-utils";
 
 interface ProjectMemberItem {
   userId: string;
@@ -74,13 +65,28 @@ const BTN_PRIMARY_CLASS = "rounded-md bg-blue-600 px-3 py-1.5 text-xs font-mediu
 const BTN_SECONDARY_CLASS = "rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700";
 const LABEL_CLASS = "text-xs font-medium text-zinc-600 dark:text-zinc-400";
 
+const ROLE_LABELS: Record<string, string> = {
+  DEV: "Developer",
+  QA: "QA Engineer",
+};
+
+const ROLE_ACTIVE: Record<string, string> = {
+  DEV: "border-indigo-400 bg-indigo-100 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300",
+  QA: "border-emerald-400 bg-emerald-100 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300",
+};
+
 export default function ProjectSettingsPage() {
   return <ProjectSettingsContent />;
 }
 
 function ProjectSettingsContent() {
+  const t = useTranslations("projectSettings");
+  const tc = useTranslations("common");
+  const td = useTranslations("dayNames");
   const params = useParams<{ id: string }>();
   const projectId = params.id;
+
+  const dayNames = [td("0"), td("1"), td("2"), td("3"), td("4"), td("5"), td("6")];
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -156,9 +162,9 @@ function ProjectSettingsContent() {
         sprintNameTemplate: draftNameTemplate,
       });
       if (result && "error" in result) {
-        setError(result.error ?? "Ошибка");
+        setError(result.error ?? tc("error"));
       } else {
-        showSuccess("Настройки спринта сохранены");
+        showSuccess(t("sprintSettingsSaved"));
         loadConfig();
       }
     });
@@ -170,9 +176,9 @@ function ProjectSettingsContent() {
         taskCoefficient: draftCoefficient,
       });
       if (result && "error" in result) {
-        setError(result.error ?? "Ошибка");
+        setError(result.error ?? tc("error"));
       } else {
-        showSuccess("Коэффициент сохранён");
+        showSuccess(t("coefficientSaved"));
       }
     });
   };
@@ -182,9 +188,9 @@ function ProjectSettingsContent() {
     startTransition(async () => {
       const result = await setActiveSprint(projectId, sprintId);
       if (result && "error" in result) {
-        setError(result.error ?? "Ошибка");
+        setError(result.error ?? tc("error"));
       } else {
-        showSuccess("Активный спринт обновлён");
+        showSuccess(t("activeSprintUpdated"));
       }
     });
   };
@@ -193,9 +199,9 @@ function ProjectSettingsContent() {
     startTransition(async () => {
       const result = await updateSpScale(projectId, draftScale);
       if (result && "error" in result) {
-        setError(result.error ?? "Ошибка");
+        setError(result.error ?? tc("error"));
       } else {
-        showSuccess("Шкала SP сохранена");
+        showSuccess(t("spScaleSaved"));
         loadConfig();
       }
     });
@@ -205,9 +211,9 @@ function ProjectSettingsContent() {
     startTransition(async () => {
       const result = await resetSpScale(projectId);
       if (result && "error" in result) {
-        setError(result.error ?? "Ошибка");
+        setError(result.error ?? tc("error"));
       } else {
-        showSuccess("Шкала сброшена к дефолту");
+        showSuccess(t("spScaleReset"));
         loadConfig();
       }
     });
@@ -245,7 +251,7 @@ function ProjectSettingsContent() {
     startTransition(async () => {
       const result = await createInviteLink(projectId, newLinkSm);
       if (result && "error" in result) {
-        setError(result.error ?? "Ошибка");
+        setError(result.error ?? tc("error"));
       } else {
         setNewLinkSm(false);
         loadLinks();
@@ -257,7 +263,7 @@ function ProjectSettingsContent() {
     startTransition(async () => {
       const result = await deleteInviteLink(linkId, projectId);
       if (result && "error" in result) {
-        setError(result.error ?? "Ошибка");
+        setError(result.error ?? tc("error"));
       } else {
         setLinks((prev) => prev.filter((l) => l.id !== linkId));
       }
@@ -268,7 +274,7 @@ function ProjectSettingsContent() {
     startTransition(async () => {
       const result = await toggleMemberSm(projectId, targetUserId);
       if (result && "error" in result) {
-        setError(result.error ?? "Ошибка");
+        setError(result.error ?? tc("error"));
       } else {
         setMembers((prev) =>
           prev.map((m) =>
@@ -291,7 +297,7 @@ function ProjectSettingsContent() {
     startTransition(async () => {
       const result = await updateMemberRole(projectId, targetUserId, newRole);
       if (result && "error" in result) {
-        setError(result.error ?? "Ошибка");
+        setError(result.error ?? tc("error"));
         loadMembers();
       }
     });
@@ -304,6 +310,12 @@ function ProjectSettingsContent() {
     new Date(),
   );
 
+  const weekLabel = (w: number) => {
+    if (w === 1) return t("week1");
+    if (w < 5) return t("week234");
+    return t("week5plus");
+  };
+
   return (
     <div className="flex min-h-screen items-start justify-center bg-zinc-50 px-4 py-12 dark:bg-zinc-950">
       <div className="w-full max-w-lg space-y-8">
@@ -315,10 +327,10 @@ function ProjectSettingsContent() {
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
             </svg>
-            Назад к проекту
+            {t("backToProject")}
           </Link>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Настройки проекта
+            {t("title")}
           </h1>
         </div>
 
@@ -334,20 +346,17 @@ function ProjectSettingsContent() {
         )}
 
         {configLoading ? (
-          <p className="text-sm text-zinc-400">Загрузка настроек...</p>
+          <p className="text-sm text-zinc-400">{t("loadingSettings")}</p>
         ) : config ? (
           <>
-            {/* Sprint Settings */}
             <div className={SECTION_CLASS}>
-              <h2 className={SECTION_TITLE_CLASS}>Спринт</h2>
-              <p className={SECTION_DESC_CLASS}>
-                Длительность, день старта и шаблон именования спринтов.
-              </p>
+              <h2 className={SECTION_TITLE_CLASS}>{t("sprint")}</h2>
+              <p className={SECTION_DESC_CLASS}>{t("sprintDesc")}</p>
 
               <div className="space-y-4">
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <label className={LABEL_CLASS}>Длительность</label>
+                    <label className={LABEL_CLASS}>{t("duration")}</label>
                     <select
                       value={draftDurationWeeks}
                       onChange={(e) => setDraftDurationWeeks(parseInt(e.target.value))}
@@ -355,19 +364,19 @@ function ProjectSettingsContent() {
                     >
                       {[1, 2, 3, 4].map((w) => (
                         <option key={w} value={w}>
-                          {w} {w === 1 ? "неделя" : w < 5 ? "недели" : "недель"}
+                          {w} {weekLabel(w)}
                         </option>
                       ))}
                     </select>
                   </div>
                   <div className="flex-1">
-                    <label className={LABEL_CLASS}>День старта</label>
+                    <label className={LABEL_CLASS}>{t("startDay")}</label>
                     <select
                       value={draftStartDay}
                       onChange={(e) => setDraftStartDay(parseInt(e.target.value))}
                       className={`mt-1 ${SELECT_CLASS} w-full`}
                     >
-                      {DAY_NAMES.map((name, i) => (
+                      {dayNames.map((name, i) => (
                         <option key={i} value={i}>{name}</option>
                       ))}
                     </select>
@@ -375,7 +384,7 @@ function ProjectSettingsContent() {
                 </div>
 
                 <div>
-                  <label className={LABEL_CLASS}>Шаблон имени спринта</label>
+                  <label className={LABEL_CLASS}>{t("sprintNameTemplate")}</label>
                   <input
                     type="text"
                     value={draftNameTemplate}
@@ -396,32 +405,24 @@ function ProjectSettingsContent() {
                     ))}
                   </div>
                   <p className="mt-2 text-xs text-zinc-400">
-                    Следующий спринт: <span className="font-medium text-zinc-600 dark:text-zinc-300">{sprintNamePreview}</span>
+                    {t("nextSprint")} <span className="font-medium text-zinc-600 dark:text-zinc-300">{sprintNamePreview}</span>
                   </p>
                 </div>
 
                 <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleSaveSprintSettings}
-                    disabled={isPending}
-                    className={BTN_PRIMARY_CLASS}
-                  >
-                    {isPending ? "..." : "Сохранить"}
+                  <button type="button" onClick={handleSaveSprintSettings} disabled={isPending} className={BTN_PRIMARY_CLASS}>
+                    {isPending ? "..." : tc("save")}
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Active Sprint */}
             <div className={SECTION_CLASS}>
-              <h2 className={SECTION_TITLE_CLASS}>Активный спринт</h2>
-              <p className={SECTION_DESC_CLASS}>
-                Борда автоматически скроллится к активному спринту при открытии.
-              </p>
+              <h2 className={SECTION_TITLE_CLASS}>{t("activeSprint")}</h2>
+              <p className={SECTION_DESC_CLASS}>{t("activeSprintDesc")}</p>
 
               {config.sprints.length === 0 ? (
-                <p className="text-sm text-zinc-400">Нет спринтов</p>
+                <p className="text-sm text-zinc-400">{t("noSprints")}</p>
               ) : (
                 <select
                   value={draftActiveSprint ?? ""}
@@ -429,7 +430,7 @@ function ProjectSettingsContent() {
                   className={`${SELECT_CLASS} w-full`}
                   disabled={isPending}
                 >
-                  <option value="">Не выбран</option>
+                  <option value="">{t("notSelected")}</option>
                   {config.sprints.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
@@ -437,49 +438,23 @@ function ProjectSettingsContent() {
               )}
             </div>
 
-            {/* SP Scale */}
             <div className={SECTION_CLASS}>
-              <h2 className={SECTION_TITLE_CLASS}>Шкала Story Points</h2>
-              <p className={SECTION_DESC_CLASS}>
-                Определите значения SP, их описание (видно команде при голосовании) и длительность в рабочих днях на Ганте.
-              </p>
+              <h2 className={SECTION_TITLE_CLASS}>{t("spScale")}</h2>
+              <p className={SECTION_DESC_CLASS}>{t("spScaleDesc")}</p>
 
               <div className="space-y-2">
                 <div className="grid grid-cols-[60px_1fr_80px_32px] gap-2 text-[10px] font-semibold text-zinc-400 uppercase">
-                  <span>SP</span>
-                  <span>Описание</span>
-                  <span>Дни</span>
+                  <span>{t("spColumn")}</span>
+                  <span>{t("descriptionColumn")}</span>
+                  <span>{t("daysColumn")}</span>
                   <span />
                 </div>
                 {draftScale.map((item, i) => (
                   <div key={i} className="grid grid-cols-[60px_1fr_80px_32px] gap-2 items-center">
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.value}
-                      onChange={(e) => handleScaleChange(i, "value", e.target.value)}
-                      className={`${INPUT_CLASS} text-center`}
-                    />
-                    <input
-                      type="text"
-                      value={item.label}
-                      onChange={(e) => handleScaleChange(i, "label", e.target.value)}
-                      placeholder="Описание..."
-                      className={INPUT_CLASS}
-                    />
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.durationDays}
-                      onChange={(e) => handleScaleChange(i, "durationDays", e.target.value)}
-                      className={`${INPUT_CLASS} text-center`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveScaleItem(i)}
-                      disabled={draftScale.length <= 1}
-                      className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition-colors hover:text-red-500 disabled:opacity-30"
-                    >
+                    <input type="number" min={1} value={item.value} onChange={(e) => handleScaleChange(i, "value", e.target.value)} className={`${INPUT_CLASS} text-center`} />
+                    <input type="text" value={item.label} onChange={(e) => handleScaleChange(i, "label", e.target.value)} placeholder={t("descriptionPlaceholder")} className={INPUT_CLASS} />
+                    <input type="number" min={1} value={item.durationDays} onChange={(e) => handleScaleChange(i, "durationDays", e.target.value)} className={`${INPUT_CLASS} text-center`} />
+                    <button type="button" onClick={() => handleRemoveScaleItem(i)} disabled={draftScale.length <= 1} className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition-colors hover:text-red-500 disabled:opacity-30">
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                       </svg>
@@ -490,88 +465,53 @@ function ProjectSettingsContent() {
 
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex gap-2">
-                  <button type="button" onClick={handleAddScaleItem} className={BTN_SECONDARY_CLASS}>
-                    + Добавить
-                  </button>
-                  <button type="button" onClick={handleResetScale} disabled={isPending} className={BTN_SECONDARY_CLASS}>
-                    Сбросить
-                  </button>
+                  <button type="button" onClick={handleAddScaleItem} className={BTN_SECONDARY_CLASS}>{t("addItem")}</button>
+                  <button type="button" onClick={handleResetScale} disabled={isPending} className={BTN_SECONDARY_CLASS}>{t("reset")}</button>
                 </div>
                 <button type="button" onClick={handleSaveScale} disabled={isPending} className={BTN_PRIMARY_CLASS}>
-                  {isPending ? "..." : "Сохранить шкалу"}
+                  {isPending ? "..." : t("saveScale")}
                 </button>
               </div>
             </div>
 
-            {/* Task Coefficient */}
             <div className={SECTION_CLASS}>
-              <h2 className={SECTION_TITLE_CLASS}>Коэффициент задач</h2>
-              <p className={SECTION_DESC_CLASS}>
-                Множитель длительности при назначении задач на Ганте. 1.0 = без изменений, 1.2 = +20%.
-              </p>
+              <h2 className={SECTION_TITLE_CLASS}>{t("taskCoefficient")}</h2>
+              <p className={SECTION_DESC_CLASS}>{t("taskCoefficientDesc")}</p>
 
               <div className="flex items-end gap-4">
                 <div className="flex-1">
-                  <label className={LABEL_CLASS}>Коэффициент</label>
-                  <input
-                    type="number"
-                    min={0.1}
-                    max={5.0}
-                    step={0.1}
-                    value={draftCoefficient}
-                    onChange={(e) => setDraftCoefficient(parseFloat(e.target.value) || 1.0)}
-                    className={`mt-1 ${INPUT_CLASS}`}
-                  />
+                  <label className={LABEL_CLASS}>{t("coefficient")}</label>
+                  <input type="number" min={0.1} max={5.0} step={0.1} value={draftCoefficient} onChange={(e) => setDraftCoefficient(parseFloat(e.target.value) || 1.0)} className={`mt-1 ${INPUT_CLASS}`} />
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSaveCoefficient}
-                  disabled={isPending}
-                  className={BTN_PRIMARY_CLASS}
-                >
-                  {isPending ? "..." : "Сохранить"}
+                <button type="button" onClick={handleSaveCoefficient} disabled={isPending} className={BTN_PRIMARY_CLASS}>
+                  {isPending ? "..." : tc("save")}
                 </button>
               </div>
               {draftCoefficient !== 1.0 && (
                 <p className="mt-2 text-xs text-zinc-400">
-                  Задача на 5 дней станет {Math.ceil(5 * draftCoefficient)} дней
+                  {t("taskDaysExample", { days: Math.ceil(5 * draftCoefficient) })}
                 </p>
               )}
             </div>
           </>
         ) : null}
 
-        {/* Invite Links */}
         <div className={SECTION_CLASS}>
-          <h2 className={SECTION_TITLE_CLASS}>Invite-ссылки</h2>
-          <p className={SECTION_DESC_CLASS}>
-            Создавайте ссылки для приглашения участников. Каждая ссылка может давать права SM.
-          </p>
+          <h2 className={SECTION_TITLE_CLASS}>{t("inviteLinks")}</h2>
+          <p className={SECTION_DESC_CLASS}>{t("inviteLinksDesc")}</p>
 
           {linksLoading ? (
-            <p className="text-sm text-zinc-400">Загрузка...</p>
+            <p className="text-sm text-zinc-400">{tc("loading")}</p>
           ) : links.length === 0 ? (
-            <p className="mb-4 text-sm text-zinc-400">Нет ссылок</p>
+            <p className="mb-4 text-sm text-zinc-400">{t("noLinks")}</p>
           ) : (
             <div className="mb-4 space-y-3">
               {links.map((link) => (
-                <div
-                  key={link.id}
-                  className="rounded-lg border border-zinc-100 px-4 py-3 dark:border-zinc-800"
-                >
+                <div key={link.id} className="rounded-lg border border-zinc-100 px-4 py-3 dark:border-zinc-800">
                   <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={link.url}
-                      className="block flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-600 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(link.url, link.id)}
-                      className={BTN_PRIMARY_CLASS}
-                    >
-                      {copiedId === link.id ? "Скопировано" : "Копировать"}
+                    <input type="text" readOnly value={link.url} className="block flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs text-zinc-600 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300" />
+                    <button type="button" onClick={() => handleCopy(link.url, link.id)} className={BTN_PRIMARY_CLASS}>
+                      {copiedId === link.id ? t("copied") : t("copy")}
                     </button>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
@@ -580,15 +520,10 @@ function ProjectSettingsContent() {
                         ? "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
                         : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"
                     }`}>
-                      {link.grantsSm ? "Scrum Master" : "Участник"}
+                      {link.grantsSm ? t("scrumMasterLabel") : t("memberLabel")}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteLink(link.id)}
-                      disabled={isPending}
-                      className="text-xs text-zinc-400 transition-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400"
-                    >
-                      Удалить
+                    <button type="button" onClick={() => handleDeleteLink(link.id)} disabled={isPending} className="text-xs text-zinc-400 transition-colors hover:text-red-600 disabled:opacity-50 dark:hover:text-red-400">
+                      {tc("delete")}
                     </button>
                   </div>
                 </div>
@@ -598,61 +533,43 @@ function ProjectSettingsContent() {
 
           <div className="flex items-center gap-3 rounded-lg border border-dashed border-zinc-300 px-4 py-3 dark:border-zinc-700">
             <label className="flex cursor-pointer items-center gap-2 select-none">
-              <input
-                type="checkbox"
-                checked={newLinkSm}
-                onChange={(e) => setNewLinkSm(e.target.checked)}
-                className="h-3.5 w-3.5 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600"
-              />
-              <span className="text-xs text-zinc-600 dark:text-zinc-400">Давать права SM</span>
+              <input type="checkbox" checked={newLinkSm} onChange={(e) => setNewLinkSm(e.target.checked)} className="h-3.5 w-3.5 rounded border-zinc-300 text-amber-600 focus:ring-amber-500 dark:border-zinc-600" />
+              <span className="text-xs text-zinc-600 dark:text-zinc-400">{t("grantSmRights")}</span>
             </label>
-            <button
-              type="button"
-              onClick={handleCreateLink}
-              disabled={isPending}
-              className={`ml-auto ${BTN_PRIMARY_CLASS}`}
-            >
-              {isPending ? "..." : "+ Создать ссылку"}
+            <button type="button" onClick={handleCreateLink} disabled={isPending} className={`ml-auto ${BTN_PRIMARY_CLASS}`}>
+              {isPending ? "..." : t("createLink")}
             </button>
           </div>
         </div>
 
-        {/* Members */}
         <div className={SECTION_CLASS}>
-          <h2 className={SECTION_TITLE_CLASS}>Участники</h2>
-          <p className={SECTION_DESC_CLASS}>
-            Управляйте ролями и правами участников проекта.
-          </p>
+          <h2 className={SECTION_TITLE_CLASS}>{t("members")}</h2>
+          <p className={SECTION_DESC_CLASS}>{t("membersDesc")}</p>
 
           {membersLoading ? (
-            <p className="text-sm text-zinc-400">Загрузка...</p>
+            <p className="text-sm text-zinc-400">{tc("loading")}</p>
           ) : members.length === 0 ? (
-            <p className="text-sm text-zinc-400">Нет участников</p>
+            <p className="text-sm text-zinc-400">{t("noMembers")}</p>
           ) : (
             <div className="space-y-3">
               {members.map((member) => (
-                <div
-                  key={member.userId}
-                  className="rounded-xl border border-zinc-100 px-5 py-4 dark:border-zinc-800"
-                >
+                <div key={member.userId} className="rounded-xl border border-zinc-100 px-5 py-4 dark:border-zinc-800">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-sm font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                         {member.name.charAt(0).toUpperCase()}
                       </div>
-                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                        {member.name}
-                      </p>
+                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{member.name}</p>
                     </div>
                     {member.userIsScrumMaster && (
                       <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-                        SM (глобальный)
+                        {t("smGlobal")}
                       </span>
                     )}
                   </div>
 
                   <div className="mt-3 space-y-2">
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">Роль в проекте</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{t("projectRole")}</p>
                     <div className="flex gap-2">
                       {(["DEV", "QA"] as const).map((r) => (
                         <button
@@ -685,7 +602,7 @@ function ProjectSettingsContent() {
                   </div>
 
                   <div className="mt-3 flex items-center justify-between">
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">SM в проекте</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{t("smInProject")}</p>
                     <button
                       type="button"
                       role="switch"
@@ -693,18 +610,10 @@ function ProjectSettingsContent() {
                       onClick={() => handleToggleSm(member.userId)}
                       disabled={isPending}
                       className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none disabled:opacity-50 ${
-                        member.isScrumMaster
-                          ? "bg-amber-500"
-                          : "bg-zinc-200 dark:bg-zinc-700"
+                        member.isScrumMaster ? "bg-amber-500" : "bg-zinc-200 dark:bg-zinc-700"
                       }`}
                     >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform ${
-                          member.isScrumMaster
-                            ? "translate-x-4"
-                            : "translate-x-0"
-                        }`}
-                      />
+                      <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform ${member.isScrumMaster ? "translate-x-4" : "translate-x-0"}`} />
                     </button>
                   </div>
                 </div>

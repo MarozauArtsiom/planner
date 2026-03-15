@@ -3,10 +3,6 @@ import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/db";
 import { EstimationBoard } from "@/components/estimation/estimation-board";
 
-export const metadata = {
-  title: "Сессия оценки — Sprint Planner",
-};
-
 export default async function ProjectEstimationPage({
   params,
 }: {

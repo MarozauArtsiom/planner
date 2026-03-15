@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { hasSmRights } from "@/lib/permissions";
@@ -15,18 +16,20 @@ async function requireUser() {
 }
 
 async function requireProjectMember(projectId: string) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
-  if (!membership) throw new Error("Нет доступа к проекту");
+  if (!membership) throw new Error(t("noProjectAccess"));
   return { user, membership };
 }
 
 async function requireProjectSM(projectId: string) {
+  const t = await getTranslations("errors");
   const { user, membership } = await requireProjectMember(projectId);
   if (!hasSmRights(user, membership))
-    throw new Error("Только Scrum Master может выполнять это действие");
+    throw new Error(t("onlySmAction"));
   return user;
 }
 
@@ -40,34 +43,25 @@ async function getActiveSession(projectId: string) {
 async function ensureSession(projectId: string) {
   const existing = await getActiveSession(projectId);
   if (existing) return existing;
-
   return prisma.estimationSession.create({
     data: { status: "VOTING", projectId },
   });
 }
 
 export async function createTicket(projectId: string, formData: FormData) {
+  const t = await getTranslations("errors");
   await requireProjectSM(projectId);
 
   const title = (formData.get("title") as string)?.trim();
   const externalId = (formData.get("externalId") as string)?.trim() || null;
   const externalUrl = (formData.get("externalUrl") as string)?.trim() || null;
-  const description =
-    (formData.get("description") as string)?.trim() || null;
-  const acceptanceCriteria =
-    (formData.get("acceptanceCriteria") as string)?.trim() || null;
+  const description = (formData.get("description") as string)?.trim() || null;
+  const acceptanceCriteria = (formData.get("acceptanceCriteria") as string)?.trim() || null;
 
-  if (!title) return { error: "Название тикета обязательно" };
+  if (!title) return { error: t("ticketTitleRequired") };
 
   await prisma.ticket.create({
-    data: {
-      title,
-      externalId,
-      externalUrl,
-      description,
-      acceptanceCriteria,
-      projectId,
-    },
+    data: { title, externalId, externalUrl, description, acceptanceCriteria, projectId },
   });
 
   return { success: true };
@@ -78,7 +72,6 @@ export async function setActiveTicket(projectId: string, ticketId: string) {
   const session = await ensureSession(projectId);
 
   await prisma.vote.deleteMany({ where: { ticketId } });
-
   await prisma.estimationSession.update({
     where: { id: session.id },
     data: { activeTicketId: ticketId, status: "VOTING" },
@@ -93,14 +86,15 @@ const VALID_RISK = [0, 1, 2];
 const VALID_UNCERTAINTY = [0, 1, 2];
 
 export async function submitVote(projectId: string, formData: FormData) {
+  const t = await getTranslations("errors");
   const { user, membership } = await requireProjectMember(projectId);
   if (!membership.role) {
-    return { error: "Только участники команды (DEV/QA) могут голосовать" };
+    return { error: t("onlyTeamCanVote") };
   }
 
   const session = await getActiveSession(projectId);
   if (!session || session.status !== "VOTING" || !session.activeTicketId) {
-    return { error: "Голосование не активно" };
+    return { error: t("votingNotActive") };
   }
 
   const devEffort = parseInt(formData.get("devEffort") as string);
@@ -114,24 +108,12 @@ export async function submitVote(projectId: string, formData: FormData) {
     !VALID_RISK.includes(risk) ||
     !VALID_UNCERTAINTY.includes(uncertainty)
   ) {
-    return { error: "Некорректные значения критериев" };
+    return { error: t("invalidCriteriaValues") };
   }
 
   await prisma.vote.upsert({
-    where: {
-      userId_ticketId: {
-        userId: user.id,
-        ticketId: session.activeTicketId,
-      },
-    },
-    create: {
-      userId: user.id,
-      ticketId: session.activeTicketId,
-      devEffort,
-      qaEffort,
-      risk,
-      uncertainty,
-    },
+    where: { userId_ticketId: { userId: user.id, ticketId: session.activeTicketId } },
+    create: { userId: user.id, ticketId: session.activeTicketId, devEffort, qaEffort, risk, uncertainty },
     update: { devEffort, qaEffort, risk, uncertainty },
   });
 
@@ -139,11 +121,12 @@ export async function submitVote(projectId: string, formData: FormData) {
 }
 
 export async function revealVotes(projectId: string) {
+  const t = await getTranslations("errors");
   await requireProjectSM(projectId);
   const session = await getActiveSession(projectId);
 
   if (!session || session.status !== "VOTING" || !session.activeTicketId) {
-    return { error: "Нет активного голосования" };
+    return { error: t("noActiveVoting") };
   }
 
   await prisma.estimationSession.update({
@@ -155,11 +138,12 @@ export async function revealVotes(projectId: string) {
 }
 
 export async function acceptEstimation(projectId: string, overrideSp?: number) {
+  const t = await getTranslations("errors");
   await requireProjectSM(projectId);
   const session = await getActiveSession(projectId);
 
   if (!session || session.status !== "REVEALED" || !session.activeTicketId) {
-    return { error: "Нечего принимать" };
+    return { error: t("nothingToAccept") };
   }
 
   const votes = await prisma.vote.findMany({
@@ -176,10 +160,7 @@ export async function acceptEstimation(projectId: string, overrideSp?: number) {
 
   await prisma.ticket.update({
     where: { id: session.activeTicketId },
-    data: {
-      storyPoints: sp,
-      devEffortProportion: result.devProportion,
-    },
+    data: { storyPoints: sp, devEffortProportion: result.devProportion },
   });
 
   await prisma.estimationSession.update({
@@ -191,17 +172,15 @@ export async function acceptEstimation(projectId: string, overrideSp?: number) {
 }
 
 export async function restartVoting(projectId: string) {
+  const t = await getTranslations("errors");
   await requireProjectSM(projectId);
   const session = await getActiveSession(projectId);
 
   if (!session || !session.activeTicketId) {
-    return { error: "Нет активного тикета" };
+    return { error: t("noActiveTicket") };
   }
 
-  await prisma.vote.deleteMany({
-    where: { ticketId: session.activeTicketId },
-  });
-
+  await prisma.vote.deleteMany({ where: { ticketId: session.activeTicketId } });
   await prisma.estimationSession.update({
     where: { id: session.id },
     data: { status: "VOTING" },
@@ -218,24 +197,22 @@ export interface TicketImportInput {
   acceptanceCriteria: string | null;
 }
 
-export async function importTickets(
-  projectId: string,
-  tickets: TicketImportInput[],
-) {
+export async function importTickets(projectId: string, tickets: TicketImportInput[]) {
+  const t = await getTranslations("errors");
   await requireProjectSM(projectId);
 
-  if (!tickets.length) return { error: "Нет тикетов для импорта" };
+  if (!tickets.length) return { error: t("noTicketsToImport") };
 
-  const valid = tickets.filter((t) => t.title?.trim());
-  if (!valid.length) return { error: "Нет тикетов с названием" };
+  const valid = tickets.filter((tk) => tk.title?.trim());
+  if (!valid.length) return { error: t("noTicketsWithTitle") };
 
   await prisma.ticket.createMany({
-    data: valid.map((t) => ({
-      title: t.title.trim(),
-      externalId: t.externalId?.trim() || null,
-      externalUrl: t.externalUrl?.trim() || null,
-      description: t.description?.trim() || null,
-      acceptanceCriteria: t.acceptanceCriteria?.trim() || null,
+    data: valid.map((tk) => ({
+      title: tk.title.trim(),
+      externalId: tk.externalId?.trim() || null,
+      externalUrl: tk.externalUrl?.trim() || null,
+      description: tk.description?.trim() || null,
+      acceptanceCriteria: tk.acceptanceCriteria?.trim() || null,
       projectId,
     })),
   });
@@ -244,13 +221,14 @@ export async function importTickets(
 }
 
 export async function deleteTicket(projectId: string, ticketId: string) {
+  const t = await getTranslations("errors");
   await requireProjectSM(projectId);
 
   const session = await prisma.estimationSession.findFirst({
     where: { activeTicketId: ticketId },
   });
   if (session) {
-    return { error: "Нельзя удалить активный тикет" };
+    return { error: t("cannotDeleteActiveTicket") };
   }
 
   await prisma.ticket.delete({ where: { id: ticketId } });

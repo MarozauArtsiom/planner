@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { hasSmRights } from "@/lib/permissions";
@@ -9,7 +10,6 @@ import {
   getSprintEndDate,
   getNextSprintStart,
   renderSprintName,
-  DAY_NAMES,
 } from "@/lib/date-utils";
 
 async function requireUser() {
@@ -21,28 +21,27 @@ async function requireUser() {
 }
 
 async function requireProjectSM(projectId: string) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
-  if (!membership) throw new Error("Нет доступа к проекту");
+  if (!membership) throw new Error(t("noProjectAccess"));
   if (!hasSmRights(user, membership))
-    throw new Error("Только Scrum Master может выполнять это действие");
+    throw new Error(t("onlySmAction"));
   return user;
 }
 
 export async function createSprint(projectId: string, startDateISO?: string) {
+  const t = await getTranslations("errors");
+  const td = await getTranslations("dayNames");
   await requireProjectSM(projectId);
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: {
-      sprintDurationWeeks: true,
-      sprintStartDay: true,
-      sprintNameTemplate: true,
-    },
+    select: { sprintDurationWeeks: true, sprintStartDay: true, sprintNameTemplate: true },
   });
-  if (!project) return { error: "Проект не найден" };
+  if (!project) return { error: t("projectNotFound") };
 
   const existingSprints = await prisma.sprint.findMany({
     where: { projectId },
@@ -54,11 +53,12 @@ export async function createSprint(projectId: string, startDateISO?: string) {
 
   if (existingSprints.length === 0) {
     if (!startDateISO) {
-      return { error: "Необходимо указать дату начала первого спринта" };
+      return { error: t("firstSprintDateRequired") };
     }
     startDate = new Date(startDateISO);
     if (!isCorrectStartDay(startDate, project.sprintStartDay)) {
-      return { error: `Спринт должен начинаться в ${DAY_NAMES[project.sprintStartDay]}` };
+      const dayName = td(String(project.sprintStartDay));
+      return { error: t("sprintMustStartOn", { day: dayName }) };
     }
   } else {
     const lastSprint = existingSprints[0];
@@ -69,25 +69,17 @@ export async function createSprint(projectId: string, startDateISO?: string) {
 
   const sprintCount = await prisma.sprint.count({ where: { projectId } });
   const sprintNumber = sprintCount + 1;
-  const name = renderSprintName(
-    project.sprintNameTemplate,
-    sprintNumber,
-    startDate,
-  );
+  const name = renderSprintName(project.sprintNameTemplate, sprintNumber, startDate);
 
   await prisma.sprint.create({
-    data: {
-      name,
-      startDate,
-      endDate,
-      projectId,
-    },
+    data: { name, startDate, endDate, projectId },
   });
 
   return { success: true };
 }
 
 export async function deleteSprint(sprintId: string, projectId: string) {
+  const t = await getTranslations("errors");
   await requireProjectSM(projectId);
 
   const lastSprint = await prisma.sprint.findFirst({
@@ -96,48 +88,40 @@ export async function deleteSprint(sprintId: string, projectId: string) {
   });
 
   if (!lastSprint || lastSprint.id !== sprintId) {
-    return { error: "Можно удалить только последний спринт" };
+    return { error: t("canDeleteOnlyLast") };
   }
 
-  const ticketsOnSprint = await prisma.ticket.count({
-    where: { sprintId },
-  });
+  const ticketsOnSprint = await prisma.ticket.count({ where: { sprintId } });
   if (ticketsOnSprint > 0) {
-    return { error: "Нельзя удалить спринт с привязанными тикетами" };
+    return { error: t("cannotDeleteSprintWithTickets") };
   }
 
   const assignmentsInRange = await prisma.ticketAssignment.count({
     where: {
       ticket: { projectId },
       startDate: { lte: lastSprint.endDate },
-      AND: {
-        startDate: { gte: lastSprint.startDate },
-      },
+      AND: { startDate: { gte: lastSprint.startDate } },
     },
   });
   if (assignmentsInRange > 0) {
-    return { error: "Нельзя удалить спринт с назначенными задачами" };
+    return { error: t("cannotDeleteSprintWithAssignments") };
   }
 
   await prisma.sprint.delete({ where: { id: sprintId } });
-
   return { success: true };
 }
 
-export async function renameSprint(
-  sprintId: string,
-  projectId: string,
-  newName: string,
-) {
+export async function renameSprint(sprintId: string, projectId: string, newName: string) {
+  const t = await getTranslations("errors");
   await requireProjectSM(projectId);
 
   const trimmed = newName.trim();
-  if (!trimmed) return { error: "Название не может быть пустым" };
-  if (trimmed.length > 100) return { error: "Максимум 100 символов" };
+  if (!trimmed) return { error: t("nameRequired") };
+  if (trimmed.length > 100) return { error: t("maxChars") };
 
   const sprint = await prisma.sprint.findUnique({ where: { id: sprintId } });
   if (!sprint || sprint.projectId !== projectId) {
-    return { error: "Спринт не найден" };
+    return { error: t("sprintNotFound") };
   }
 
   await prisma.sprint.update({
@@ -148,10 +132,7 @@ export async function renameSprint(
   return { success: true };
 }
 
-export async function recalcFutureSprints(
-  projectId: string,
-  newDurationWeeks: number,
-) {
+export async function recalcFutureSprints(projectId: string, newDurationWeeks: number) {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     select: { activeSprintId: true },
@@ -176,9 +157,7 @@ export async function recalcFutureSprints(
 
   for (let i = activeIndex + 1; i < allSprints.length; i++) {
     const prev = allSprints[i - 1];
-    const prevEnd = i - 1 > activeIndex
-      ? getSprintEndDate(prev.startDate, newDurationWeeks)
-      : prev.endDate;
+    const prevEnd = i - 1 > activeIndex ? getSprintEndDate(prev.startDate, newDurationWeeks) : prev.endDate;
     const newStart = getNextSprintStart(prevEnd);
     const newEnd = getSprintEndDate(newStart, newDurationWeeks);
 

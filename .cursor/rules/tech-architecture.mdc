@@ -14,6 +14,7 @@ alwaysApply: true
 - **Стейт-менеджер (Client):** Zustand — хранение оптимистичного стейта при drag-and-drop у Скрам-мастера.
 - **UI & Drag-and-Drop:** @dnd-kit/core — легковесная либа для сложных кастомных Гант-сеток.
 - **Даты:** date-fns — пропуск выходных и отпусков.
+- **i18n:** next-intl — интернационализация. 7 языков: en (дефолт), ru, pl, es, be, uk, hi. Файлы в `messages/*.json`. Автоопределение по `Accept-Language` → cookie `NEXT_LOCALE` → fallback `en`. Server: `getTranslations()`, Client: `useTranslations()`. Правила для агента в `.cursor/rules/i18n.mdc`.
 
 ## 2. Стратегия Базы Данных (Local to Vercel)
 
@@ -65,7 +66,7 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 - `/project/[id]/estimation` — сессия оценки
 - `/project/[id]/settings` — настройки проекта (спринт, шкала SP, коэффициент, активный спринт, invite-ссылки, участники)
 - `/invite/[token]` — присоединение к проекту (выбор роли DEV/QA)
-- `/settings` — профиль пользователя (isScrumMaster)
+- `/settings` — профиль пользователя (isScrumMaster, выбор языка)
 
 ## 7. Логика диаграммы Ганта
 

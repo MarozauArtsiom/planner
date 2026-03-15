@@ -1,0 +1,74 @@
+---
+description: i18n — правила интернационализации при разработке новых фич
+alwaysApply: true
+---
+
+# i18n: Правила интернационализации
+
+Проект использует `next-intl` для мультиязычной поддержки. При любых изменениях кода агент обязан соблюдать правила ниже.
+
+## Поддерживаемые языки
+
+7 файлов переводов в папке `messages/`:
+- `en.json` — English (дефолтный)
+- `ru.json` — Русский
+- `pl.json` — Polski
+- `es.json` — Español
+- `be.json` — Беларуская
+- `uk.json` — Українська
+- `hi.json` — हिन्दी
+
+## Правила для агента
+
+### При добавлении нового текста в UI
+
+1. **Никогда не хардкодь** пользовательские строки в JSX, placeholder'ы, error-сообщения, title, aria-label и т.д.
+2. **Добавь ключ перевода** во ВСЕ 7 файлов `messages/*.json` с корректным переводом на каждый язык.
+3. **Используй namespace-структуру** — ключи группируются по функциональности: `common.*`, `auth.*`, `home.*`, `estimation.*`, `gantt.*`, `errors.*` и т.д.
+4. **Именование ключей** — `camelCase` внутри namespace: `estimation.selectTicketTitle`, `errors.projectNotFound`.
+
+### Использование в коде
+
+- **Client Components (`"use client"`):** `useTranslations("namespace")` из `next-intl`
+- **Server Components:** `getTranslations("namespace")` из `next-intl/server`
+- **Server Actions:** `getTranslations("errors")` из `next-intl/server` для error-сообщений
+- **Интерполяция:** `t("greeting", { name: user.name })` — переменные через `{variable}` в JSON
+
+### Структура JSON-ключей
+
+```
+namespace.camelCaseKey
+```
+
+Примеры:
+- `common.save` — общие кнопки
+- `auth.loginButton` — экран авторизации
+- `estimation.revealResults` — сессия оценки
+- `errors.projectNotFound` — ошибки сервер-экшенов
+
+### При создании новой страницы или компонента
+
+1. Определи namespace для нового компонента (существующий или новый).
+2. Добавь ВСЕ строки как ключи в JSON-файлы.
+3. Используй `useTranslations` / `getTranslations` в компоненте.
+4. Не забудь placeholder'ы, title, aria-label — они тоже переводятся.
+
+### При добавлении нового error-сообщения в server action
+
+1. Добавь ключ в namespace `errors` во всех 7 файлах.
+2. Используй `const t = await getTranslations("errors")` в server action.
+3. Верни `{ error: t("newErrorKey") }`.
+
+### Автоопределение языка
+
+- Приоритет: cookie `NEXT_LOCALE` → заголовок `Accept-Language` → fallback `en`.
+- Логика в `src/i18n/request.ts`.
+- Пользователь выбирает язык на `/settings` → записывается в cookie.
+
+### Чеклист при code review
+
+- [ ] Все новые строки вынесены в `messages/*.json`
+- [ ] Ключи добавлены во ВСЕ 7 языковых файлов
+- [ ] Переводы корректны для каждого языка
+- [ ] В коде используется `useTranslations` / `getTranslations`, а не хардкод
+- [ ] Переменные в строках используют `{variable}` синтаксис

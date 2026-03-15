@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-03-15 (i18n: Мультиязычная поддержка)
+- **feat(i18n):** 6 новых языков: English, Polski, Español, Беларуская, Українська, हिन्दी — файлы `messages/{en,pl,es,be,uk,hi}.json`
+- **feat(i18n):** Автоопределение языка по заголовку `Accept-Language` браузера при первом визите
+- **feat(i18n):** Fallback на английский, если язык браузера не поддерживается
+- **feat(i18n):** Языковой дропдаун в настройках расширен до 7 языков
+- **feat(i18n):** Cursor rule `.cursor/rules/i18n.mdc` — автоматическое соблюдение i18n при добавлении новых фич
+
+## 2026-03-15 (i18n: Интернационализация)
+- **feat(i18n):** Интеграция `next-intl` — поддержка интернационализации для всех лейблов и сообщений в приложении
+- **feat(i18n):** Файл переводов `messages/ru.json` — ~200 ключей, организованных по namespace (common, auth, home, settings, estimation, gantt, errors и др.)
+- **feat(i18n):** Конфигурация `src/i18n/request.ts` — cookie-based выбор локали (`NEXT_LOCALE`)
+- **feat(i18n):** `NextIntlClientProvider` в root layout — переводы доступны во всех серверных и клиентских компонентах
+- **feat(user-menu):** Новый компонент `UserMenu` — выпадающее меню возле имени пользователя с кнопками «Настройки» и «Выйти»
+- **feat(settings):** Языковой дропдаун на странице `/settings` — выбор языка интерфейса (пока только Русский)
+- **feat(locale-action):** Server action `setLocale` — сохраняет выбранный язык в cookie
+- **refactor(pages):** Все страницы переведены на `useTranslations` / `getTranslations` — login, register, home, settings, invite, project settings, estimation
+- **refactor(components):** Все компоненты переведены — estimation-board, ticket-form, import-modal, voting-form, vote-details, estimation-toast, gantt-board, gantt-backlog, gantt-empty-state, sprint-create-dialog, gantt-header
+- **refactor(actions):** Все error messages в server actions используют `getTranslations("errors")` — auth, project, estimation, sprint, assignment, timeoff
+- **refactor(home):** Инлайн-ссылки «Настройки» и «Выйти» заменены на компонент `UserMenu` (dropdown)
+- **refactor(project-content):** Аналогично — `UserMenu` вместо инлайн-ссылок в хедере проекта
+
 ## 2026-03-15 (Эпик 2: Импорт тикетов из CSV)
 - **feat(csv-parser):** Клиентский парсер CSV/TSV на базе papaparse с автоопределением разделителя, маппингом колонок по алиасам и валидацией (title обязательно)
 - **feat(estimation):** Server action `importTickets` — массовое создание тикетов через `prisma.ticket.createMany()`, SM-only

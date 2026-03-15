@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useEstimationNotification } from "@/hooks/use-estimation-notification";
 
 export function EstimationToast({ projectId }: { projectId: string }) {
+  const t = useTranslations("estimationToast");
   const { active, ticketTitle } = useEstimationNotification(projectId);
   const [dismissed, setDismissed] = useState(false);
   const prevTitleRef = useRef<string | null>(null);
@@ -24,7 +26,7 @@ export function EstimationToast({ projectId }: { projectId: string }) {
         <div className="flex items-center gap-2">
           <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
           <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider dark:text-blue-400">
-            Оценка началась
+            {t("started")}
           </span>
         </div>
         <button
@@ -48,7 +50,7 @@ export function EstimationToast({ projectId }: { projectId: string }) {
         href={`/project/${projectId}/estimation`}
         className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
       >
-        Перейти к оценке
+        {t("goToEstimation")}
         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
         </svg>

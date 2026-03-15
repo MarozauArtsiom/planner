@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { getCurrentUser } from "@/lib/current-user";
-import { logout } from "@/app/actions/auth";
 import { createProject } from "@/app/actions/project";
 import { prisma } from "@/lib/db";
+import { UserMenu } from "@/components/user-menu";
+
 async function handleCreateProject(formData: FormData) {
   "use server";
   await createProject(formData);
@@ -12,6 +14,9 @@ async function handleCreateProject(formData: FormData) {
 export default async function HomePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+
+  const t = await getTranslations("home");
+  const tc = await getTranslations("common");
 
   const memberships = await prisma.projectMember.findMany({
     where: { userId: user.id },
@@ -33,37 +38,10 @@ export default async function HomePage() {
       <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Sprint Planner
+            {tc("appName")}
           </h1>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-zinc-600 dark:text-zinc-300">
-                {user.name}
-              </span>
-              {user.isScrumMaster && (
-                <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-                  SM
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3 border-l border-zinc-200 pl-4 dark:border-zinc-700">
-              <Link
-                href="/settings"
-                className="text-sm text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
-              >
-                Настройки
-              </Link>
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="text-sm text-zinc-400 transition-colors hover:text-red-600 dark:text-zinc-500 dark:hover:text-red-400"
-                >
-                  Выйти
-                </button>
-              </form>
-            </div>
-          </div>
+          <UserMenu userName={user.name} isScrumMaster={user.isScrumMaster} />
         </div>
       </header>
 
@@ -72,10 +50,10 @@ export default async function HomePage() {
           <div className="mb-6 flex items-center justify-between">
             <div>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Привет, {user.name}
+                {t("greeting", { name: user.name })}
               </p>
               <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-                Ваши проекты
+                {t("yourProjects")}
               </h2>
             </div>
             {sm && (
@@ -84,14 +62,14 @@ export default async function HomePage() {
                   name="name"
                   type="text"
                   required
-                  placeholder="Название проекта"
+                  placeholder={t("projectNamePlaceholder")}
                   className="mr-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
                 />
                 <button
                   type="submit"
                   className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                 >
-                  Создать
+                  {t("createProject")}
                 </button>
               </form>
             )}
@@ -106,7 +84,7 @@ export default async function HomePage() {
                   </svg>
                 </div>
                 <p className="text-zinc-500 dark:text-zinc-400">
-                  У вас пока нет проектов. Создайте первый проект выше.
+                  {t("noProjectsSm")}
                 </p>
               </div>
             ) : (
@@ -119,11 +97,10 @@ export default async function HomePage() {
                   </div>
 
                   <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-                    Нет активных проектов
+                    {t("noProjectsTitle")}
                   </h3>
                   <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                    Scrum Master создаёт проект и отправляет вам invite-ссылку.
-                    Перейдите по ней, чтобы присоединиться к команде.
+                    {t("noProjectsDesc")}
                   </p>
                 </div>
 
@@ -133,7 +110,7 @@ export default async function HomePage() {
                       1
                     </div>
                     <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                      SM создаёт проект
+                      {t("step1")}
                     </p>
                   </div>
                   <div className="flex flex-col items-center text-center">
@@ -141,7 +118,7 @@ export default async function HomePage() {
                       2
                     </div>
                     <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                      Вам приходит ссылка
+                      {t("step2")}
                     </p>
                   </div>
                   <div className="flex flex-col items-center text-center">
@@ -149,7 +126,7 @@ export default async function HomePage() {
                       3
                     </div>
                     <p className="text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                      Вы в команде
+                      {t("step3")}
                     </p>
                   </div>
                 </div>
@@ -169,30 +146,30 @@ export default async function HomePage() {
                         {project.name}
                       </h3>
                       <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-                        Владелец: {project.owner.name}
+                        {t("owner", { name: project.owner.name })}
                       </p>
                       <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
                         {project._count.members}{" "}
                         {project._count.members === 1
-                          ? "участник"
+                          ? t("memberCount1")
                           : project._count.members < 5
-                            ? "участника"
-                            : "участников"}
+                            ? t("memberCount234")
+                            : t("memberCount5plus")}
                       </p>
                     </div>
                     <div className="relative z-10 flex items-center gap-1">
                       <Link
                         href={`/project/${project.id}/estimation`}
                         className="rounded-md px-2 py-1 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/30"
-                        title="Сессия оценки"
+                        title={t("estimationSession")}
                       >
-                        Оценка
+                        {t("estimation")}
                       </Link>
                       {(sm || memberSm) && (
                         <Link
                           href={`/project/${project.id}/settings`}
                           className="rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
-                          title="Настройки проекта"
+                          title={t("projectSettings")}
                         >
                           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />

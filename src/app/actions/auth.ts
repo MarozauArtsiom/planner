@@ -1,23 +1,25 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { setSession, clearSession } from "@/lib/session";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
 export async function register(formData: FormData) {
+  const t = await getTranslations("errors");
   const name = (formData.get("name") as string)?.trim();
   const password = formData.get("password") as string;
   const isScrumMaster = formData.get("isScrumMaster") === "on";
   const redirectTo = (formData.get("redirectTo") as string) || "/";
 
   if (!name || name.length < 2)
-    return { error: "Ник минимум 2 символа" };
+    return { error: t("nickMin2") };
   if (!password || password.length < 4)
-    return { error: "Пароль минимум 4 символа" };
+    return { error: t("passwordMin4") };
 
   const existing = await prisma.user.findUnique({ where: { name } });
-  if (existing) return { error: "Этот ник уже занят" };
+  if (existing) return { error: t("nickTaken") };
 
   try {
     const passwordHash = await hashPassword(password);
@@ -27,31 +29,32 @@ export async function register(formData: FormData) {
 
     await setSession(user.id);
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Неизвестная ошибка";
-    return { error: `Ошибка регистрации: ${message}` };
+    const message = e instanceof Error ? e.message : t("unknownError");
+    return { error: t("registerError", { message }) };
   }
   redirect(redirectTo);
 }
 
 export async function login(formData: FormData) {
+  const t = await getTranslations("errors");
   const name = (formData.get("name") as string)?.trim();
   const password = formData.get("password") as string;
   const redirectTo = (formData.get("redirectTo") as string) || "/";
 
   if (!name || !password)
-    return { error: "Введите ник и пароль" };
+    return { error: t("enterCredentials") };
 
   try {
     const user = await prisma.user.findUnique({ where: { name } });
-    if (!user) return { error: "Неверный ник или пароль" };
+    if (!user) return { error: t("invalidCredentials") };
 
     const valid = await verifyPassword(password, user.passwordHash);
-    if (!valid) return { error: "Неверный ник или пароль" };
+    if (!valid) return { error: t("invalidCredentials") };
 
     await setSession(user.id);
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Неизвестная ошибка";
-    return { error: `Ошибка входа: ${message}` };
+    const message = e instanceof Error ? e.message : t("unknownError");
+    return { error: t("loginError", { message }) };
   }
   redirect(redirectTo);
 }

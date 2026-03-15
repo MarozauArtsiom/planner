@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { joinProject } from "@/app/actions/project";
 
 type Role = "DEV" | "QA";
@@ -13,6 +14,7 @@ export function InviteForm({
   token: string;
   grantsSm: boolean;
 }) {
+  const t = useTranslations("invite");
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
   const [state, formAction, isPending] = useActionState<ActionState, FormData>(
@@ -29,14 +31,14 @@ export function InviteForm({
   const roles = [
     {
       role: "DEV" as Role,
-      label: "Developer",
-      desc: "Разработка",
+      label: t("developer"),
+      desc: t("devDesc"),
       d: "M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5",
     },
     {
       role: "QA" as Role,
-      label: "QA Engineer",
-      desc: "Тестирование",
+      label: t("qaEngineer"),
+      desc: t("qaDesc"),
       d: "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z",
     },
   ];
@@ -45,8 +47,8 @@ export function InviteForm({
     <form action={formAction} className="space-y-5">
       <fieldset>
         <legend className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Ваша роль в проекте
-          <span className="ml-1 font-normal text-zinc-400">(опционально)</span>
+          {t("yourRole")}
+          <span className="ml-1 font-normal text-zinc-400">{t("optional")}</span>
         </legend>
         <div className="mt-2 grid grid-cols-2 gap-3">
           {roles.map((r) => (
@@ -82,7 +84,7 @@ export function InviteForm({
 
       {grantsSm && (
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-          Эта ссылка предоставляет права Scrum Master в проекте
+          {t("smRightsGranted")}
         </p>
       )}
 
@@ -97,7 +99,7 @@ export function InviteForm({
         disabled={isPending}
         className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
       >
-        {isPending ? "Присоединение..." : "Присоединиться"}
+        {isPending ? t("joinPending") : t("joinButton")}
       </button>
     </form>
   );

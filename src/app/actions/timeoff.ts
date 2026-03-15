@@ -1,12 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { hasSmRights } from "@/lib/permissions";
 import { startOfDay } from "date-fns";
 
 async function requireProjectSM(projectId: string) {
+  const t = await getTranslations("errors");
   const userId = await getSession();
   if (!userId) redirect("/login");
   const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -15,23 +17,20 @@ async function requireProjectSM(projectId: string) {
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
-  if (!membership) throw new Error("Нет доступа к проекту");
+  if (!membership) throw new Error(t("noProjectAccess"));
   if (!hasSmRights(user, membership))
-    throw new Error("Только Scrum Master может выполнять это действие");
+    throw new Error(t("onlySmAction"));
   return user;
 }
 
-export async function toggleTimeOff(
-  projectId: string,
-  userId: string,
-  dateISO: string,
-) {
+export async function toggleTimeOff(projectId: string, userId: string, dateISO: string) {
+  const t = await getTranslations("errors");
   await requireProjectSM(projectId);
 
   const targetMembership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId, projectId } },
   });
-  if (!targetMembership) return { error: "Пользователь не участник проекта" };
+  if (!targetMembership) return { error: t("userNotProjectMember") };
 
   const date = startOfDay(new Date(dateISO));
 

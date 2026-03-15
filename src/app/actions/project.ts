@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { hasSmRights } from "@/lib/permissions";
@@ -22,13 +23,14 @@ async function requireUser() {
 }
 
 export async function createProject(formData: FormData) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
   if (!user.isScrumMaster) {
-    return { error: "Только Scrum Master может создавать проекты" };
+    return { error: t("onlySmCanCreateProjects") };
   }
 
   const name = (formData.get("name") as string)?.trim();
-  if (!name) return { error: "Название проекта обязательно" };
+  if (!name) return { error: t("projectNameRequired") };
 
   const project = await prisma.project.create({
     data: {
@@ -49,13 +51,14 @@ export async function createProject(formData: FormData) {
 }
 
 export async function joinProject(inviteToken: string, role: string | null) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
 
   const link = await prisma.inviteLink.findUnique({
     where: { token: inviteToken },
     include: { project: true },
   });
-  if (!link) return { error: "Ссылка недействительна" };
+  if (!link) return { error: t("linkInvalid") };
 
   const existing = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId: link.projectId } },
@@ -77,20 +80,22 @@ export async function joinProject(inviteToken: string, role: string | null) {
 }
 
 export async function createInviteLink(projectId: string, grantsSm: boolean) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
 
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership || !hasSmRights(user, membership)) {
-    return { error: "Только Scrum Master может создавать ссылки" };
+    return { error: t("onlySmCanCreateLinks") };
   }
 
+  const tp = await getTranslations("projectSettings");
   const link = await prisma.inviteLink.create({
     data: {
       projectId,
       grantsSm,
-      label: grantsSm ? "Scrum Master" : "Участник",
+      label: grantsSm ? tp("scrumMasterLabel") : tp("memberLabel"),
     },
   });
 
@@ -98,18 +103,19 @@ export async function createInviteLink(projectId: string, grantsSm: boolean) {
 }
 
 export async function deleteInviteLink(linkId: string, projectId: string) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
 
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership || !hasSmRights(user, membership)) {
-    return { error: "Только Scrum Master может удалять ссылки" };
+    return { error: t("onlySmCanDeleteLinks") };
   }
 
   const link = await prisma.inviteLink.findUnique({ where: { id: linkId } });
   if (!link || link.projectId !== projectId) {
-    return { error: "Ссылка не найдена" };
+    return { error: t("linkNotFound") };
   }
 
   await prisma.inviteLink.delete({ where: { id: linkId } });
@@ -117,20 +123,21 @@ export async function deleteInviteLink(linkId: string, projectId: string) {
 }
 
 export async function toggleMemberSm(projectId: string, targetUserId: string) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
 
   const callerMembership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!callerMembership || !hasSmRights(user, callerMembership)) {
-    return { error: "Только Scrum Master может управлять правами" };
+    return { error: t("onlySmCanManageRights") };
   }
 
   const targetMembership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: targetUserId, projectId } },
   });
   if (!targetMembership) {
-    return { error: "Участник не найден" };
+    return { error: t("memberNotFound") };
   }
 
   await prisma.projectMember.update({
@@ -141,25 +148,22 @@ export async function toggleMemberSm(projectId: string, targetUserId: string) {
   return { success: true, isScrumMaster: !targetMembership.isScrumMaster };
 }
 
-export async function updateMemberRole(
-  projectId: string,
-  targetUserId: string,
-  newRole: string | null,
-) {
+export async function updateMemberRole(projectId: string, targetUserId: string, newRole: string | null) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
 
   const callerMembership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!callerMembership || !hasSmRights(user, callerMembership)) {
-    return { error: "Только Scrum Master может менять роли" };
+    return { error: t("onlySmCanChangeRoles") };
   }
 
   const targetMembership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: targetUserId, projectId } },
   });
   if (!targetMembership) {
-    return { error: "Участник не найден" };
+    return { error: t("memberNotFound") };
   }
 
   const role = newRole && isValidRole(newRole) ? newRole : null;
@@ -181,27 +185,28 @@ export async function updateProjectSettings(
     taskCoefficient?: number;
   },
 ) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership || !hasSmRights(user, membership)) {
-    return { error: "Только Scrum Master может менять настройки" };
+    return { error: t("onlySmCanChangeSettings") };
   }
 
   if (settings.sprintDurationWeeks != null) {
     if (settings.sprintDurationWeeks < 1 || settings.sprintDurationWeeks > 4) {
-      return { error: "Длительность спринта: 1-4 недели" };
+      return { error: t("sprintDurationRange") };
     }
   }
   if (settings.sprintStartDay != null) {
     if (settings.sprintStartDay < 0 || settings.sprintStartDay > 6) {
-      return { error: "День старта: 0 (Вс) - 6 (Сб)" };
+      return { error: t("startDayRange") };
     }
   }
   if (settings.taskCoefficient != null) {
     if (settings.taskCoefficient < 0.1 || settings.taskCoefficient > 5.0) {
-      return { error: "Коэффициент: от 0.1 до 5.0" };
+      return { error: t("coefficientRange") };
     }
   }
 
@@ -220,11 +225,7 @@ export async function updateProjectSettings(
     },
   });
 
-  if (
-    settings.sprintDurationWeeks != null &&
-    oldProject &&
-    settings.sprintDurationWeeks !== oldProject.sprintDurationWeeks
-  ) {
+  if (settings.sprintDurationWeeks != null && oldProject && settings.sprintDurationWeeks !== oldProject.sprintDurationWeeks) {
     await recalcFutureSprints(projectId, settings.sprintDurationWeeks);
   }
 
@@ -232,18 +233,19 @@ export async function updateProjectSettings(
 }
 
 export async function setActiveSprint(projectId: string, sprintId: string | null) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership || !hasSmRights(user, membership)) {
-    return { error: "Только Scrum Master может менять активный спринт" };
+    return { error: t("onlySmCanChangeActiveSprint") };
   }
 
   if (sprintId) {
     const sprint = await prisma.sprint.findUnique({ where: { id: sprintId } });
     if (!sprint || sprint.projectId !== projectId) {
-      return { error: "Спринт не найден" };
+      return { error: t("sprintNotFound") };
     }
   }
 
@@ -256,39 +258,31 @@ export async function setActiveSprint(projectId: string, sprintId: string | null
 }
 
 export async function updateSpScale(projectId: string, items: SpScaleEntry[]) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership || !hasSmRights(user, membership)) {
-    return { error: "Только Scrum Master может менять шкалу SP" };
+    return { error: t("onlySmCanChangeSpScale") };
   }
 
-  if (items.length === 0) {
-    return { error: "Шкала должна содержать хотя бы одно значение" };
-  }
+  if (items.length === 0) return { error: t("scaleMinOne") };
 
   const values = items.map((i) => i.value);
-  if (new Set(values).size !== values.length) {
-    return { error: "Значения SP не должны повторяться" };
-  }
+  if (new Set(values).size !== values.length) return { error: t("spValuesDuplicate") };
 
   for (const item of items) {
-    if (item.value < 1) return { error: "SP должно быть >= 1" };
-    if (item.durationDays < 1) return { error: "Длительность должна быть >= 1 дня" };
-    if (!item.label.trim()) return { error: "Описание не может быть пустым" };
+    if (item.value < 1) return { error: t("spMinOne") };
+    if (item.durationDays < 1) return { error: t("durationMinOne") };
+    if (!item.label.trim()) return { error: t("descriptionRequired") };
   }
 
   await prisma.$transaction([
     prisma.spScaleItem.deleteMany({ where: { projectId } }),
     ...items.map((item) =>
       prisma.spScaleItem.create({
-        data: {
-          projectId,
-          value: item.value,
-          label: item.label.trim(),
-          durationDays: item.durationDays,
-        },
+        data: { projectId, value: item.value, label: item.label.trim(), durationDays: item.durationDays },
       }),
     ),
   ]);
@@ -297,24 +291,20 @@ export async function updateSpScale(projectId: string, items: SpScaleEntry[]) {
 }
 
 export async function resetSpScale(projectId: string) {
+  const t = await getTranslations("errors");
   const user = await requireUser();
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership || !hasSmRights(user, membership)) {
-    return { error: "Только Scrum Master может менять шкалу SP" };
+    return { error: t("onlySmCanChangeSpScale") };
   }
 
   await prisma.$transaction([
     prisma.spScaleItem.deleteMany({ where: { projectId } }),
     ...DEFAULT_SP_SCALE.map((item) =>
       prisma.spScaleItem.create({
-        data: {
-          projectId,
-          value: item.value,
-          label: item.label,
-          durationDays: item.durationDays,
-        },
+        data: { projectId, value: item.value, label: item.label, durationDays: item.durationDays },
       }),
     ),
   ]);
