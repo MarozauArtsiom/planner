@@ -14,6 +14,7 @@ interface Props {
 export function GanttMemberList({ members, headerHeight, rowHeights }: Props) {
   const devs = members.filter((m) => m.role === "DEV");
   const qas = members.filter((m) => m.role === "QA");
+  const bas = members.filter((m) => m.role === "BA");
 
   function getHeight(memberId: string): number {
     return rowHeights?.get(memberId) ?? ROW_HEIGHT;
@@ -65,6 +66,27 @@ export function GanttMemberList({ members, headerHeight, rowHeights }: Props) {
             </span>
           </div>
           {qas.map((m) => (
+            <div
+              key={m.id}
+              className="flex items-start border-b border-zinc-100 px-3 pt-3.5 dark:border-zinc-800"
+              style={{ height: getHeight(m.id) }}
+            >
+              <span className="truncate text-sm text-zinc-700 dark:text-zinc-300">
+                {m.name}
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+
+      {bas.length > 0 && (
+        <>
+          <div className="flex h-7 items-center border-b border-zinc-200 bg-amber-50/50 px-3 dark:border-zinc-700 dark:bg-amber-950/20">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-500 dark:text-amber-400">
+              BA
+            </span>
+          </div>
+          {bas.map((m) => (
             <div
               key={m.id}
               className="flex items-start border-b border-zinc-100 px-3 pt-3.5 dark:border-zinc-800"

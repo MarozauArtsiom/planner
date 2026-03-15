@@ -24,7 +24,8 @@ export async function GET(
   });
   if (!membership)
     return NextResponse.json({ error: "Not a member" }, { status: 403 });
-  if (!hasSmRights(user, membership))
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true } });
+  if (!hasSmRights(userId, membership, project))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const members = await prisma.projectMember.findMany({
@@ -34,12 +35,14 @@ export async function GET(
   });
 
   return NextResponse.json({
+    ownerId: project!.ownerId,
     members: members.map((m) => ({
       userId: m.user.id,
       name: m.user.name,
       role: m.role,
       isScrumMaster: m.isScrumMaster,
       userIsScrumMaster: m.user.isScrumMaster,
+      isOwner: m.user.id === project!.ownerId,
     })),
   });
 }

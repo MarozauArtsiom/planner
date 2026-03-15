@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-03-15 (Разделение глобальных и проектных ролей + роль BA)
+- **refactor(permissions):** `hasSmRights(userId, membership, project)` — глобальный `isScrumMaster` больше не даёт SM-права в проектах, только право создавать проекты
+- **feat(permissions):** Владелец проекта (`project.ownerId`) всегда имеет SM-права, которые нельзя отозвать
+- **feat(project-settings):** Бейдж «Owner» и заблокированный SM-toggle для владельца в списке участников
+- **feat(project-settings):** Защита `toggleMemberSm` от изменения статуса владельца
+- **feat(roles):** Новая командная роль BA (Business Analyst) — голосование, отдельная секция на Ганте, назначение тикетов
+- **feat(gantt):** Третья секция BA на диаграмме Ганта (после QA), amber-стилизация блоков
+- **feat(assignment):** Drop на BA создаёт только BA-назначение (без авто-привязки к DEV/QA)
+- **feat(invite):** BA-карточка на форме присоединения к проекту
+- **feat(report):** BA-секция в PDF-отчёте — группа, колонки baAssignee и baDays
+- **feat(i18n):** Ключи `cannotChangeOwnerSm`, `ownerBadge`, `roleBa`, `businessAnalyst`, `baDesc`, `ba`, `baAssignee`, `baDays` во всех 7 языках
+
 ## 2026-03-15 (Sprint Report PDF Export)
 - **feat(report):** Экспорт PDF-отчёта по спринт-планированию — Ганта-чарт, сводка, таблицы по участникам и тикетам
 - **feat(report):** Multi-sprint выбор через чекбоксы в диалоге экспорта

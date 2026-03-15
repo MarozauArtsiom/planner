@@ -63,6 +63,8 @@
     "devDesc": "Desarrollo",
     "qaEngineer": "QA Engineer",
     "qaDesc": "Testing",
+    "businessAnalyst": "Analista de negocios",
+    "baDesc": "Análisis y requisitos",
     "smRightsGranted": "Este enlace otorga derechos de Scrum Master en el proyecto",
     "joinPending": "Uniéndose...",
     "joinButton": "Unirse"
@@ -71,7 +73,8 @@
     "estimation": "Estimación",
     "settings": "Configuración",
     "roleDev": "Developer",
-    "roleQa": "QA Engineer"
+    "roleQa": "QA Engineer",
+    "roleBa": "Analista de negocios"
   },
   "projectSettings": {
     "backToProject": "Volver al proyecto",
@@ -117,6 +120,7 @@
     "noMembers": "No hay miembros",
     "smGlobal": "SM (global)",
     "projectRole": "Rol en el proyecto",
+    "ownerBadge": "Propietario",
     "smInProject": "SM en el proyecto",
     "sprintSettingsSaved": "Configuración del sprint guardada",
     "coefficientSaved": "Coeficiente guardado",
@@ -327,7 +331,8 @@
     "minDurationOneDay": "Duración mínima — 1 día",
     "canSplitOnlyDev": "Solo se puede dividir un bloque Dev",
     "qaBlockExists": "El bloque QA ya existe",
-    "userNotProjectMember": "El usuario no es miembro del proyecto"
+    "userNotProjectMember": "El usuario no es miembro del proyecto",
+    "cannotChangeOwnerSm": "No se puede cambiar el estado SM del propietario del proyecto"
   },
   "report": {
     "pdfLanguage": "Idioma del PDF",
@@ -354,6 +359,7 @@
     "ganttTitle": "Diagrama de Gantt",
     "dev": "Desarrollo",
     "qa": "QA",
+    "ba": "Análisis de negocios",
     "memberBreakdownTitle": "Desglose por miembro",
     "ticketSummaryTitle": "Resumen de tickets",
     "backlogTitle": "Backlog no planificado",
@@ -364,8 +370,10 @@
     "dates": "Fechas",
     "devAssignee": "Dev",
     "qaAssignee": "QA",
+    "baAssignee": "BA",
     "devDays": "Días Dev",
     "qaDays": "Días QA",
+    "baDays": "Días BA",
     "total": "Total",
     "timeOffs": "Ausencias",
     "available": "Disponible",

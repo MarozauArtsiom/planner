@@ -183,6 +183,7 @@ export function GanttGrid({
 
   const devs = members.filter((m) => m.role === "DEV");
   const qas = members.filter((m) => m.role === "QA");
+  const bas = members.filter((m) => m.role === "BA");
 
   const sectionHeaderHeight = 28;
 
@@ -198,6 +199,10 @@ export function GanttGrid({
   if (qas.length > 0) {
     rows.push({ type: "section-header", label: "QA" });
     qas.forEach((m) => rows.push({ type: "member", member: m }));
+  }
+  if (bas.length > 0) {
+    rows.push({ type: "section-header", label: "BA" });
+    bas.forEach((m) => rows.push({ type: "member", member: m }));
   }
 
   return (

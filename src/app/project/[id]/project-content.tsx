@@ -9,6 +9,7 @@ import { UserMenu } from "@/components/user-menu";
 const ROLE_STYLES: Record<string, string> = {
   DEV: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
   QA: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+  BA: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
 };
 
 interface Props {
@@ -35,7 +36,7 @@ export function ProjectContent({
     <span
       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_STYLES[userRole] ?? ""}`}
     >
-      {userRole === "DEV" ? t("roleDev") : userRole === "QA" ? t("roleQa") : userRole}
+      {userRole === "DEV" ? t("roleDev") : userRole === "QA" ? t("roleQa") : userRole === "BA" ? t("roleBa") : userRole}
     </span>
   ) : undefined;
 

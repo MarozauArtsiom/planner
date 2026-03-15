@@ -1,6 +1,7 @@
 export function hasSmRights(
-  user: { isScrumMaster: boolean },
+  userId: string,
   membership?: { isScrumMaster: boolean } | null,
+  project?: { ownerId: string } | null,
 ): boolean {
-  return user.isScrumMaster || membership?.isScrumMaster === true;
+  return project?.ownerId === userId || membership?.isScrumMaster === true;
 }

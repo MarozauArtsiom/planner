@@ -27,6 +27,7 @@ export interface ReportTranslations {
   ganttTitle: string;
   dev: string;
   qa: string;
+  ba: string;
   memberBreakdown: string;
   ticketSummary: string;
   backlogTitle: string;
@@ -37,8 +38,10 @@ export interface ReportTranslations {
   dates: string;
   devAssignee: string;
   qaAssignee: string;
+  baAssignee: string;
   devDays: string;
   qaDays: string;
+  baDays: string;
   total: string;
   timeOffs: string;
   available: string;
@@ -210,7 +213,7 @@ function drawGanttPage(doc: jsPDF, data: ReportData, t: ReportTranslations) {
     data.members,
     data.assignments,
     data.timeOffs,
-    { dev: t.dev, qa: t.qa },
+    { dev: t.dev, qa: t.qa, ba: t.ba },
   );
 }
 
@@ -372,8 +375,10 @@ function drawTicketSummaryPage(
       sp: number;
       devAssignee: string;
       qaAssignee: string;
+      baAssignee: string;
       devDays: number;
       qaDays: number;
+      baDays: number;
     }
   >();
 
@@ -389,8 +394,10 @@ function drawTicketSummaryPage(
         sp: a.storyPoints,
         devAssignee: "",
         qaAssignee: "",
+        baAssignee: "",
         devDays: 0,
         qaDays: 0,
+        baDays: 0,
       });
     }
     const entry = ticketMap.get(a.ticketId)!;
@@ -398,9 +405,12 @@ function drawTicketSummaryPage(
     if (a.type === "DEV") {
       entry.devAssignee = assigneeName;
       entry.devDays = a.durationDays;
-    } else {
+    } else if (a.type === "QA") {
       entry.qaAssignee = assigneeName;
       entry.qaDays = a.durationDays;
+    } else {
+      entry.baAssignee = assigneeName;
+      entry.baDays = a.durationDays;
     }
   }
 
@@ -413,8 +423,10 @@ function drawTicketSummaryPage(
     String(t.sp),
     t.devAssignee || "-",
     t.qaAssignee || "-",
+    t.baAssignee || "-",
     String(t.devDays),
     String(t.qaDays),
+    String(t.baDays),
   ]);
 
   const totalSp = [...ticketMap.values()].reduce((s, x) => s + x.sp, 0);
@@ -426,6 +438,10 @@ function drawTicketSummaryPage(
     (s, x) => s + x.qaDays,
     0,
   );
+  const totalBaDays = [...ticketMap.values()].reduce(
+    (s, x) => s + x.baDays,
+    0,
+  );
 
   rows.push([
     "",
@@ -433,8 +449,10 @@ function drawTicketSummaryPage(
     String(totalSp),
     "",
     "",
+    "",
     String(totalDevDays),
     String(totalQaDays),
+    String(totalBaDays),
   ]);
 
   autoTable(doc, {
@@ -445,8 +463,10 @@ function drawTicketSummaryPage(
         t.sp,
         t.devAssignee,
         t.qaAssignee,
+        t.baAssignee,
         t.devDays,
         t.qaDays,
+        t.baDays,
       ],
     ],
     body: rows,
@@ -563,10 +583,13 @@ function getBacklogStatus(
   ticket: ReportBacklogTicket,
   t: ReportTranslations,
 ): string {
-  if (!ticket.hasDevAssignment && !ticket.hasQaAssignment) return t.noAssignment;
-  if (ticket.hasDevAssignment && !ticket.hasQaAssignment) return t.devOnly;
-  if (!ticket.hasDevAssignment && ticket.hasQaAssignment) return t.qaOnly;
-  return t.assigned;
+  const parts: string[] = [];
+  if (ticket.hasDevAssignment) parts.push("DEV");
+  if (ticket.hasQaAssignment) parts.push("QA");
+  if (ticket.hasBaAssignment) parts.push("BA");
+  if (parts.length === 0) return t.noAssignment;
+  if (parts.length >= 2 && ticket.hasDevAssignment && ticket.hasQaAssignment) return t.assigned;
+  return parts.join("+");
 }
 
 function computeStats(data: ReportData, options: ReportOptions) {
@@ -587,6 +610,7 @@ function computeStats(data: ReportData, options: ReportOptions) {
 
   const devMembers = data.members.filter((m) => m.role === "DEV");
   const qaMembers = data.members.filter((m) => m.role === "QA");
+  const baMembers = data.members.filter((m) => m.role === "BA");
 
   const allDays =
     data.sprints.length > 0
@@ -634,6 +658,7 @@ function computeStats(data: ReportData, options: ReportOptions) {
     unassignedSp,
     devCount: devMembers.length,
     qaCount: qaMembers.length,
+    baCount: baMembers.length,
     totalWorkingDays,
     totalAvailableDays,
     totalAssignedDays,

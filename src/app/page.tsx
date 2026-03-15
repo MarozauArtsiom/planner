@@ -165,7 +165,7 @@ export default async function HomePage() {
                       >
                         {t("estimation")}
                       </Link>
-                      {(sm || memberSm) && (
+                      {(memberSm || project.ownerId === user.id) && (
                         <Link
                           href={`/project/${project.id}/settings`}
                           className="rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"

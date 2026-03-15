@@ -29,6 +29,7 @@ import {
 const ROLE_STYLES: Record<string, string> = {
   DEV: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
   QA: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+  BA: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
 };
 
 export function EstimationBoard({ projectId }: { projectId: string }) {
@@ -100,7 +101,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
     );
   }
 
-  const roleLabel = state.currentUser.role === "DEV" ? tp("roleDev") : state.currentUser.role === "QA" ? tp("roleQa") : state.currentUser.role;
+  const roleLabel = state.currentUser.role === "DEV" ? tp("roleDev") : state.currentUser.role === "QA" ? tp("roleQa") : state.currentUser.role === "BA" ? tp("roleBa") : state.currentUser.role;
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">

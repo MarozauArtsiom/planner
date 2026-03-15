@@ -8,7 +8,7 @@ import { hasSmRights } from "@/lib/permissions";
 import { DEFAULT_SP_SCALE, type SpScaleEntry } from "@/lib/sp-scale";
 import { recalcFutureSprints } from "@/app/actions/sprint";
 
-const VALID_ROLES = ["DEV", "QA"] as const;
+const VALID_ROLES = ["DEV", "QA", "BA"] as const;
 
 function isValidRole(role: string): role is (typeof VALID_ROLES)[number] {
   return (VALID_ROLES as readonly string[]).includes(role);
@@ -20,6 +20,19 @@ async function requireUser() {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) redirect("/login");
   return user;
+}
+
+async function requireProjectSM(projectId: string) {
+  const t = await getTranslations("errors");
+  const user = await requireUser();
+  const membership = await prisma.projectMember.findUnique({
+    where: { userId_projectId: { userId: user.id, projectId } },
+  });
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true } });
+  if (!membership || !hasSmRights(user.id, membership, project)) {
+    throw new Error(t("onlySmAction"));
+  }
+  return { user, project: project! };
 }
 
 export async function createProject(formData: FormData) {
@@ -81,12 +94,9 @@ export async function joinProject(inviteToken: string, role: string | null) {
 
 export async function createInviteLink(projectId: string, grantsSm: boolean) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
-
-  const membership = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: user.id, projectId } },
-  });
-  if (!membership || !hasSmRights(user, membership)) {
+  try {
+    await requireProjectSM(projectId);
+  } catch {
     return { error: t("onlySmCanCreateLinks") };
   }
 
@@ -104,12 +114,9 @@ export async function createInviteLink(projectId: string, grantsSm: boolean) {
 
 export async function deleteInviteLink(linkId: string, projectId: string) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
-
-  const membership = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: user.id, projectId } },
-  });
-  if (!membership || !hasSmRights(user, membership)) {
+  try {
+    await requireProjectSM(projectId);
+  } catch {
     return { error: t("onlySmCanDeleteLinks") };
   }
 
@@ -124,13 +131,15 @@ export async function deleteInviteLink(linkId: string, projectId: string) {
 
 export async function toggleMemberSm(projectId: string, targetUserId: string) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
-
-  const callerMembership = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: user.id, projectId } },
-  });
-  if (!callerMembership || !hasSmRights(user, callerMembership)) {
+  let project: { ownerId: string };
+  try {
+    ({ project } = await requireProjectSM(projectId));
+  } catch {
     return { error: t("onlySmCanManageRights") };
+  }
+
+  if (targetUserId === project.ownerId) {
+    return { error: t("cannotChangeOwnerSm") };
   }
 
   const targetMembership = await prisma.projectMember.findUnique({
@@ -150,12 +159,9 @@ export async function toggleMemberSm(projectId: string, targetUserId: string) {
 
 export async function updateMemberRole(projectId: string, targetUserId: string, newRole: string | null) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
-
-  const callerMembership = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: user.id, projectId } },
-  });
-  if (!callerMembership || !hasSmRights(user, callerMembership)) {
+  try {
+    await requireProjectSM(projectId);
+  } catch {
     return { error: t("onlySmCanChangeRoles") };
   }
 
@@ -186,11 +192,9 @@ export async function updateProjectSettings(
   },
 ) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
-  const membership = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: user.id, projectId } },
-  });
-  if (!membership || !hasSmRights(user, membership)) {
+  try {
+    await requireProjectSM(projectId);
+  } catch {
     return { error: t("onlySmCanChangeSettings") };
   }
 
@@ -234,11 +238,9 @@ export async function updateProjectSettings(
 
 export async function setActiveSprint(projectId: string, sprintId: string | null) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
-  const membership = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: user.id, projectId } },
-  });
-  if (!membership || !hasSmRights(user, membership)) {
+  try {
+    await requireProjectSM(projectId);
+  } catch {
     return { error: t("onlySmCanChangeActiveSprint") };
   }
 
@@ -259,11 +261,9 @@ export async function setActiveSprint(projectId: string, sprintId: string | null
 
 export async function updateSpScale(projectId: string, items: SpScaleEntry[]) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
-  const membership = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: user.id, projectId } },
-  });
-  if (!membership || !hasSmRights(user, membership)) {
+  try {
+    await requireProjectSM(projectId);
+  } catch {
     return { error: t("onlySmCanChangeSpScale") };
   }
 
@@ -292,11 +292,9 @@ export async function updateSpScale(projectId: string, items: SpScaleEntry[]) {
 
 export async function resetSpScale(projectId: string) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
-  const membership = await prisma.projectMember.findUnique({
-    where: { userId_projectId: { userId: user.id, projectId } },
-  });
-  if (!membership || !hasSmRights(user, membership)) {
+  try {
+    await requireProjectSM(projectId);
+  } catch {
     return { error: t("onlySmCanChangeSpScale") };
   }
 

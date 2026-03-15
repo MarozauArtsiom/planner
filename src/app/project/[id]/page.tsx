@@ -21,7 +21,7 @@ export default async function ProjectPage({
   if (!membership) notFound();
 
   const project = membership.project;
-  const smRights = hasSmRights(user, membership);
+  const smRights = hasSmRights(user.id, membership, project);
 
   return (
     <ProjectContent
@@ -30,7 +30,7 @@ export default async function ProjectPage({
       userName={user.name}
       userRole={membership.role}
       hasSmRights={smRights}
-      userIsSm={user.isScrumMaster}
+      userIsSm={smRights}
     />
   );
 }

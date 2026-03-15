@@ -28,7 +28,8 @@ async function requireProjectMember(projectId: string) {
 async function requireProjectSM(projectId: string) {
   const t = await getTranslations("errors");
   const { user, membership } = await requireProjectMember(projectId);
-  if (!hasSmRights(user, membership))
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true } });
+  if (!hasSmRights(user.id, membership, project))
     throw new Error(t("onlySmAction"));
   return user;
 }

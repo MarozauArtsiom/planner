@@ -22,6 +22,7 @@ interface ProjectMemberItem {
   role: string | null;
   isScrumMaster: boolean;
   userIsScrumMaster: boolean;
+  isOwner: boolean;
 }
 
 interface InviteLinkItem {
@@ -68,11 +69,13 @@ const LABEL_CLASS = "text-xs font-medium text-zinc-600 dark:text-zinc-400";
 const ROLE_LABELS: Record<string, string> = {
   DEV: "Developer",
   QA: "QA Engineer",
+  BA: "Business Analyst",
 };
 
 const ROLE_ACTIVE: Record<string, string> = {
   DEV: "border-indigo-400 bg-indigo-100 text-indigo-700 dark:border-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300",
   QA: "border-emerald-400 bg-emerald-100 text-emerald-700 dark:border-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-300",
+  BA: "border-amber-400 bg-amber-100 text-amber-700 dark:border-amber-600 dark:bg-amber-950/60 dark:text-amber-300",
 };
 
 export default function ProjectSettingsPage() {
@@ -561,17 +564,24 @@ function ProjectSettingsContent() {
                       </div>
                       <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{member.name}</p>
                     </div>
-                    {member.userIsScrumMaster && (
-                      <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-                        {t("smGlobal")}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {member.isOwner && (
+                        <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                          {t("ownerBadge")}
+                        </span>
+                      )}
+                      {member.userIsScrumMaster && (
+                        <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                          {t("smGlobal")}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="mt-3 space-y-2">
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">{t("projectRole")}</p>
                     <div className="flex gap-2">
-                      {(["DEV", "QA"] as const).map((r) => (
+                      {(["DEV", "QA", "BA"] as const).map((r) => (
                         <button
                           key={r}
                           type="button"
@@ -606,14 +616,14 @@ function ProjectSettingsContent() {
                     <button
                       type="button"
                       role="switch"
-                      aria-checked={member.isScrumMaster}
+                      aria-checked={member.isScrumMaster || member.isOwner}
                       onClick={() => handleToggleSm(member.userId)}
-                      disabled={isPending}
+                      disabled={isPending || member.isOwner}
                       className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none disabled:opacity-50 ${
-                        member.isScrumMaster ? "bg-amber-500" : "bg-zinc-200 dark:bg-zinc-700"
+                        member.isScrumMaster || member.isOwner ? "bg-amber-500" : "bg-zinc-200 dark:bg-zinc-700"
                       }`}
                     >
-                      <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform ${member.isScrumMaster ? "translate-x-4" : "translate-x-0"}`} />
+                      <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform ${member.isScrumMaster || member.isOwner ? "translate-x-4" : "translate-x-0"}`} />
                     </button>
                   </div>
                 </div>

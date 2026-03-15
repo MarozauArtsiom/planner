@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { hasSmRights } from "@/lib/permissions";
 import { calculateEstimation } from "@/lib/estimation-engine";
 
 export const dynamic = "force-dynamic";
@@ -33,11 +34,12 @@ export async function GET(request: NextRequest) {
   const totalVoters = await prisma.projectMember.count({
     where: {
       projectId,
-      role: { in: ["DEV", "QA"] },
+      role: { in: ["DEV", "QA", "BA"] },
     },
   });
 
-  const isSM = user.isScrumMaster || membership.isScrumMaster;
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true } });
+  const isSM = hasSmRights(userId, membership, project);
 
   let submittedCount = 0;
   let currentUserVoted = false;
@@ -56,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     if (session.status === "VOTING" && isSM) {
       const teamMembers = await prisma.projectMember.findMany({
-        where: { projectId, role: { in: ["DEV", "QA"] } },
+        where: { projectId, role: { in: ["DEV", "QA", "BA"] } },
         include: { user: { select: { id: true, name: true } } },
         orderBy: { user: { name: "asc" } },
       });

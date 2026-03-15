@@ -33,7 +33,7 @@ export function drawGanttChart(
   members: ReportMember[],
   assignments: ReportAssignment[],
   timeOffs: ReportTimeOff[],
-  translations: { dev: string; qa: string },
+  translations: { dev: string; qa: string; ba: string },
 ): GanttDrawResult {
   if (sprints.length === 0 || members.length === 0) {
     return { endY: startY };
@@ -63,17 +63,15 @@ export function drawGanttChart(
 
   const devMembers = members.filter((m) => m.role === "DEV");
   const qaMembers = members.filter((m) => m.role === "QA");
+  const baMembers = members.filter((m) => m.role === "BA");
 
   const memberSubRows = computeAllSubRows(members, assignments, allDays);
 
-  const totalRows = computeTotalHeight(
-    devMembers,
-    qaMembers,
-    memberSubRows,
-  );
+  const groups = [devMembers, qaMembers, baMembers].filter((g) => g.length > 0);
+  const totalRows = computeTotalHeight(groups, memberSubRows);
 
   const totalChartHeight =
-    HEADER_HEIGHT + totalRows * SUB_ROW_HEIGHT + GROUP_HEADER_HEIGHT * 2;
+    HEADER_HEIGHT + totalRows * SUB_ROW_HEIGHT + GROUP_HEADER_HEIGHT * groups.length;
 
   let currentY = startY;
 
@@ -87,37 +85,30 @@ export function drawGanttChart(
   drawHeader(doc, currentY, gridX, allDays, dayWidth, sprints);
   currentY += HEADER_HEIGHT;
 
-  currentY = drawGroup(
-    doc,
-    currentY,
-    margin,
-    gridX,
-    translations.dev,
-    devMembers,
-    assignments,
-    allDays,
-    dayWidth,
-    timeOffSet,
-    memberSubRows,
-    pageHeight,
-    margin,
-  );
+  const groupDefs: { label: string; members: ReportMember[] }[] = [
+    { label: translations.dev, members: devMembers },
+    { label: translations.qa, members: qaMembers },
+    { label: translations.ba, members: baMembers },
+  ];
 
-  currentY = drawGroup(
-    doc,
-    currentY,
-    margin,
-    gridX,
-    translations.qa,
-    qaMembers,
-    assignments,
-    allDays,
-    dayWidth,
-    timeOffSet,
-    memberSubRows,
-    pageHeight,
-    margin,
-  );
+  for (const group of groupDefs) {
+    if (group.members.length === 0) continue;
+    currentY = drawGroup(
+      doc,
+      currentY,
+      margin,
+      gridX,
+      group.label,
+      group.members,
+      assignments,
+      allDays,
+      dayWidth,
+      timeOffSet,
+      memberSubRows,
+      pageHeight,
+      margin,
+    );
+  }
 
   const legendY = drawLegend(
     doc,
@@ -491,17 +482,18 @@ function computeSubRowsForReport(
 }
 
 function computeTotalHeight(
-  devMembers: ReportMember[],
-  qaMembers: ReportMember[],
+  groups: ReportMember[][],
   memberSubRows: Map<string, Map<string, number>>,
 ): number {
   let total = 0;
-  for (const m of [...devMembers, ...qaMembers]) {
-    const subRowMap = memberSubRows.get(m.id);
-    const maxSub = subRowMap && subRowMap.size > 0
-      ? Math.max(...subRowMap.values()) + 1
-      : 1;
-    total += maxSub;
+  for (const group of groups) {
+    for (const m of group) {
+      const subRowMap = memberSubRows.get(m.id);
+      const maxSub = subRowMap && subRowMap.size > 0
+        ? Math.max(...subRowMap.values()) + 1
+        : 1;
+      total += maxSub;
+    }
   }
   return total;
 }

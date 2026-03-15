@@ -63,6 +63,8 @@
     "devDesc": "Розробка",
     "qaEngineer": "QA Engineer",
     "qaDesc": "Тестування",
+    "businessAnalyst": "Бізнес-аналітик",
+    "baDesc": "Аналіз і вимоги",
     "smRightsGranted": "Це посилання надає права Scrum Master у проєкті",
     "joinPending": "Приєднання...",
     "joinButton": "Приєднатися"
@@ -71,7 +73,8 @@
     "estimation": "Оцінка",
     "settings": "Налаштування",
     "roleDev": "Developer",
-    "roleQa": "QA Engineer"
+    "roleQa": "QA Engineer",
+    "roleBa": "Бізнес-аналітик"
   },
   "projectSettings": {
     "backToProject": "Назад до проєкту",
@@ -117,6 +120,7 @@
     "noMembers": "Немає учасників",
     "smGlobal": "SM (глобальний)",
     "projectRole": "Роль у проєкті",
+    "ownerBadge": "Власник",
     "smInProject": "SM у проєкті",
     "sprintSettingsSaved": "Налаштування спринту збережено",
     "coefficientSaved": "Коефіцієнт збережено",
@@ -327,7 +331,8 @@
     "minDurationOneDay": "Мінімальна тривалість — 1 день",
     "canSplitOnlyDev": "Розділити можна тільки Dev-блок",
     "qaBlockExists": "QA-блок вже існує",
-    "userNotProjectMember": "Користувач не є учасником проєкту"
+    "userNotProjectMember": "Користувач не є учасником проєкту",
+    "cannotChangeOwnerSm": "Не можна змінити SM-статус власника проєкту"
   },
   "report": {
     "pdfLanguage": "Мова PDF",
@@ -354,6 +359,7 @@
     "ganttTitle": "Діаграма Ганта",
     "dev": "Розробка",
     "qa": "Тестування",
+    "ba": "Бізнес-аналіз",
     "memberBreakdownTitle": "По учасниках",
     "ticketSummaryTitle": "Зведення тікетів",
     "backlogTitle": "Незапланований беклог",
@@ -364,8 +370,10 @@
     "dates": "Дати",
     "devAssignee": "Dev",
     "qaAssignee": "QA",
+    "baAssignee": "BA",
     "devDays": "Дні Dev",
     "qaDays": "Дні QA",
+    "baDays": "Дні BA",
     "total": "Разом",
     "timeOffs": "Вихідні",
     "available": "Доступно",

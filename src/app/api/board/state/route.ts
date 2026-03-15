@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { hasSmRights } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { activeSprintId: true },
+    select: { activeSprintId: true, ownerId: true },
   });
 
   const sprints = await prisma.sprint.findMany({
@@ -37,17 +38,18 @@ export async function GET(request: NextRequest) {
   const members = await prisma.projectMember.findMany({
     where: {
       projectId,
-      role: { in: ["DEV", "QA"] },
+      role: { in: ["DEV", "QA", "BA"] },
     },
     include: { user: { select: { id: true, name: true } } },
     orderBy: { user: { name: "asc" } },
   });
 
+  const roleOrder: Record<string, number> = { DEV: 0, QA: 1, BA: 2 };
   const sortedMembers = members
     .map((m) => ({ id: m.user.id, name: m.user.name, role: m.role! }))
     .sort((a, b) => {
       if (a.role === b.role) return a.name.localeCompare(b.name);
-      return a.role === "DEV" ? -1 : 1;
+      return (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9);
     });
 
   const assignments = await prisma.ticketAssignment.findMany({
@@ -96,6 +98,7 @@ export async function GET(request: NextRequest) {
     devEffortProportion: t.devEffortProportion ?? 0.5,
     hasDevAssignment: t.ticketAssignments.some((a) => a.type === "DEV"),
     hasQaAssignment: t.ticketAssignments.some((a) => a.type === "QA"),
+    hasBaAssignment: t.ticketAssignments.some((a) => a.type === "BA"),
   }));
 
   return NextResponse.json({
@@ -125,6 +128,6 @@ export async function GET(request: NextRequest) {
       date: t.date.toISOString(),
     })),
     activeSprintId: project?.activeSprintId ?? null,
-    currentUser: { id: user.id, role: membership.role, isScrumMaster: user.isScrumMaster || membership.isScrumMaster },
+    currentUser: { id: user.id, role: membership.role, isScrumMaster: hasSmRights(userId, membership, project) },
   });
 }

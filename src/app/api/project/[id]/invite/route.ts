@@ -23,7 +23,8 @@ export async function GET(
   const membership = await prisma.projectMember.findUnique({
     where: { userId_projectId: { userId, projectId } },
   });
-  if (!membership || !hasSmRights(user, membership))
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true } });
+  if (!membership || !hasSmRights(userId, membership, project))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const links = await prisma.inviteLink.findMany({

@@ -12,7 +12,7 @@ export interface BoardSprint {
 export interface BoardMember {
   id: string;
   name: string;
-  role: "DEV" | "QA";
+  role: "DEV" | "QA" | "BA";
 }
 
 export interface BoardAssignment {
@@ -25,7 +25,7 @@ export interface BoardAssignment {
   userId: string;
   startDate: string;
   durationDays: number;
-  type: "DEV" | "QA";
+  type: "DEV" | "QA" | "BA";
   parentAssignmentId: string | null;
 }
 
@@ -37,6 +37,7 @@ export interface BacklogTicket {
   devEffortProportion: number;
   hasDevAssignment: boolean;
   hasQaAssignment: boolean;
+  hasBaAssignment: boolean;
 }
 
 export interface BoardTimeOff {

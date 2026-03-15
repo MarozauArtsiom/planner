@@ -63,6 +63,8 @@
     "devDesc": "विकास",
     "qaEngineer": "QA Engineer",
     "qaDesc": "परीक्षण",
+    "businessAnalyst": "बिज़नेस एनालिस्ट",
+    "baDesc": "विश्लेषण और आवश्यकताएँ",
     "smRightsGranted": "यह लिंक प्रोजेक्ट में Scrum Master अधिकार प्रदान करता है",
     "joinPending": "शामिल हो रहे हैं...",
     "joinButton": "शामिल हों"
@@ -71,7 +73,8 @@
     "estimation": "अनुमान",
     "settings": "सेटिंग्स",
     "roleDev": "Developer",
-    "roleQa": "QA Engineer"
+    "roleQa": "QA Engineer",
+    "roleBa": "बिज़नेस एनालिस्ट"
   },
   "projectSettings": {
     "backToProject": "प्रोजेक्ट पर वापस",
@@ -117,6 +120,7 @@
     "noMembers": "कोई सदस्य नहीं",
     "smGlobal": "SM (वैश्विक)",
     "projectRole": "प्रोजेक्ट में भूमिका",
+    "ownerBadge": "मालिक",
     "smInProject": "प्रोजेक्ट में SM",
     "sprintSettingsSaved": "स्प्रिंट सेटिंग्स सहेजी गईं",
     "coefficientSaved": "गुणांक सहेजा गया",
@@ -327,7 +331,8 @@
     "minDurationOneDay": "न्यूनतम अवधि — 1 दिन",
     "canSplitOnlyDev": "केवल Dev ब्लॉक विभाजित किया जा सकता है",
     "qaBlockExists": "QA ब्लॉक पहले से मौजूद है",
-    "userNotProjectMember": "उपयोगकर्ता प्रोजेक्ट सदस्य नहीं है"
+    "userNotProjectMember": "उपयोगकर्ता प्रोजेक्ट सदस्य नहीं है",
+    "cannotChangeOwnerSm": "प्रोजेक्ट मालिक का SM स्टेटस बदला नहीं जा सकता"
   },
   "report": {
     "pdfLanguage": "PDF भाषा",
@@ -354,6 +359,7 @@
     "ganttTitle": "गैंट चार्ट",
     "dev": "विकास",
     "qa": "QA",
+    "ba": "बिज़नेस एनालिसिस",
     "memberBreakdownTitle": "सदस्य-वार विवरण",
     "ticketSummaryTitle": "टिकट सारांश",
     "backlogTitle": "अनियोजित बैकलॉग",
@@ -364,8 +370,10 @@
     "dates": "तिथियां",
     "devAssignee": "Dev",
     "qaAssignee": "QA",
+    "baAssignee": "BA",
     "devDays": "Dev दिन",
     "qaDays": "QA दिन",
+    "baDays": "BA दिन",
     "total": "कुल",
     "timeOffs": "छुट्टियां",
     "available": "उपलब्ध",

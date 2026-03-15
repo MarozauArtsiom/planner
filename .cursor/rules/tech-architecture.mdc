@@ -44,17 +44,17 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 - **User** — login/passwordHash для авторизации. Глобальный SM-флаг `isScrumMaster: Boolean` (право создавать проекты). Поле `role` deprecated — роль теперь per-project.
 - **Project** — корневая сущность. `ownerId` — SM, создавший проект. Настройки спринта (`sprintDurationWeeks`, `sprintStartDay`, `sprintNameTemplate`), `taskCoefficient`, `activeSprintId` (FK на Sprint).
 - **SpScaleItem** — настраиваемая шкала SP per-project. `value` (число SP), `label` (описание для команды), `durationDays` (рабочие дни на Ганте). Unique `[projectId, value]`. Дефолтная шкала сидится при создании проекта.
-- **ProjectMember** — связь User ↔ Project. Unique constraint `[userId, projectId]`. Per-project роль `role` (`"DEV" | "QA" | null`). Per-project SM-флаг `isScrumMaster: Boolean`.
+- **ProjectMember** — связь User ↔ Project. Unique constraint `[userId, projectId]`. Per-project роль `role` (`"DEV" | "QA" | "BA" | null`). Per-project SM-флаг `isScrumMaster: Boolean`.
 - **InviteLink** — invite-ссылка для проекта. Уникальный `token`, флаг `grantsSm` (даёт SM-права при присоединении), опциональный `label`. Несколько ссылок на проект.
 - **Sprint, Ticket, EstimationSession** — привязаны к Project через `projectId`.
-- **TicketAssignment** — отделен от Ticket, поддержка Dev/QA ассайнментов на разных людей. `parentAssignmentId` для Finish-to-Start зависимости.
+- **TicketAssignment** — отделен от Ticket, поддержка Dev/QA/BA ассайнментов на разных людей. `parentAssignmentId` для Finish-to-Start зависимости (только DEV→QA). BA-назначение создаётся отдельно без авто-привязки.
 - **Vote** — unique per `[userId, ticketId]`.
 
 ### Ключевые решения
 
-- **Assignment отделен от Ticket** — одна задача может иметь Dev-ассайнмент и QA-ассайнмент на разных людей.
-- **SM как флаг, а не роль** — `User.isScrumMaster` (глобальный, для создания проектов) + `ProjectMember.isScrumMaster` (per-project). Итоговые SM-права = `user.isScrumMaster || membership.isScrumMaster`. Центральный хелпер: `hasSmRights(user, membership)`.
-- **Командная роль per-project** — `ProjectMember.role` nullable. Выбирается при присоединении к проекту. SM может менять роль участника в настройках. Чистый SM (role=null) не виден на Ганте, не голосует.
+- **Assignment отделен от Ticket** — одна задача может иметь Dev-ассайнмент, QA-ассайнмент и BA-ассайнмент на разных людей.
+- **SM как флаг + Owner** — `User.isScrumMaster` (глобальный, только для создания проектов). Проектный SM = owner (`project.ownerId === userId`) или `ProjectMember.isScrumMaster`. Центральный хелпер: `hasSmRights(userId, membership, project)`. Владелец (owner) всегда SM, его статус нельзя изменить.
+- **Командная роль per-project** — `ProjectMember.role` nullable (`"DEV" | "QA" | "BA" | null`). Выбирается при присоединении к проекту. SM может менять роль участника в настройках. Чистый SM (role=null) не виден на Ганте, не голосует.
 - **Множественные invite-ссылки** — модель `InviteLink` вместо `Project.inviteToken`. SM-флаг закодирован в токене (в БД), а не передаётся как URL-параметр.
 
 ## 6. Маршрутизация
@@ -65,7 +65,7 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 - `/project/[id]` — Board проекта (Gantt)
 - `/project/[id]/estimation` — сессия оценки
 - `/project/[id]/settings` — настройки проекта (спринт, шкала SP, коэффициент, активный спринт, invite-ссылки, участники)
-- `/invite/[token]` — присоединение к проекту (выбор роли DEV/QA)
+- `/invite/[token]` — присоединение к проекту (выбор роли DEV/QA/BA)
 - `/settings` — профиль пользователя (isScrumMaster, выбор языка)
 
 ## 7. Логика диаграммы Ганта
@@ -77,7 +77,8 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 
 ## 8. Permissions Architecture
 
-- **`src/lib/permissions.ts`** — единственный хелпер `hasSmRights(user, membership)`.
-- **Server Actions** — каждый файл с SM-only actions содержит `requireProjectSM(projectId)`, который загружает user + membership и вызывает `hasSmRights`.
+- **`src/lib/permissions.ts`** — единственный хелпер `hasSmRights(userId, membership, project)`. SM-права = `project.ownerId === userId || membership.isScrumMaster`. Глобальный `User.isScrumMaster` НЕ даёт SM-прав в проекте.
+- **Server Actions** — каждый файл с SM-only actions содержит `requireProjectSM(projectId)`, который загружает user + membership + project и вызывает `hasSmRights`.
 - **Создание проектов** — проверяется `user.isScrumMaster` (глобальный флаг).
+- **Owner-защита** — `toggleMemberSm` запрещает изменение SM-статуса владельца. UI: SM-toggle заблокирован для owner, бейдж «Owner».
 - **SM всегда активен** — пользователь с SM-правами видит расширенный UI без необходимости переключения. Голосование и управление доступны одновременно.

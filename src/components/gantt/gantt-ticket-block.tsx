@@ -16,7 +16,7 @@ interface Props {
   ticketExternalId: string | null;
   calendarSpan: number;
   durationDays: number;
-  type: "DEV" | "QA";
+  type: "DEV" | "QA" | "BA";
   dayOffset: number;
   subRow: number;
   isSM: boolean;
@@ -131,7 +131,9 @@ export function GanttTicketBlock({
   const typeBadgeCls =
     type === "QA"
       ? "bg-emerald-500 dark:bg-emerald-600"
-      : "bg-indigo-500 dark:bg-indigo-600";
+      : type === "BA"
+        ? "bg-amber-500 dark:bg-amber-600"
+        : "bg-indigo-500 dark:bg-indigo-600";
 
   return (
     <div
@@ -156,7 +158,7 @@ export function GanttTicketBlock({
           <span
             className={`flex-shrink-0 rounded px-1 py-px text-[9px] font-bold uppercase leading-tight text-white ${typeBadgeCls}`}
           >
-            {type === "QA" ? "QA" : "DEV"}
+            {type}
           </span>
           {!isNarrow && (
             <span

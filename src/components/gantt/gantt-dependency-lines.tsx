@@ -21,23 +21,19 @@ function getMemberYOffset(
   members: BoardMember[],
   rowHeights: Map<string, number>,
 ): number {
-  const devs = members.filter((m) => m.role === "DEV");
-  const qas = members.filter((m) => m.role === "QA");
+  const groups = [
+    members.filter((m) => m.role === "DEV"),
+    members.filter((m) => m.role === "QA"),
+    members.filter((m) => m.role === "BA"),
+  ];
 
   const sectionHeaderHeight = 28;
   let y = 0;
 
-  if (devs.length > 0) {
+  for (const group of groups) {
+    if (group.length === 0) continue;
     y += sectionHeaderHeight;
-    for (const m of devs) {
-      if (m.id === memberId) return y;
-      y += rowHeights.get(m.id) ?? ROW_HEIGHT;
-    }
-  }
-
-  if (qas.length > 0) {
-    y += sectionHeaderHeight;
-    for (const m of qas) {
+    for (const m of group) {
       if (m.id === memberId) return y;
       y += rowHeights.get(m.id) ?? ROW_HEIGHT;
     }

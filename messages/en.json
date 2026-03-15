@@ -63,6 +63,8 @@
     "devDesc": "Development",
     "qaEngineer": "QA Engineer",
     "qaDesc": "Testing",
+    "businessAnalyst": "Business Analyst",
+    "baDesc": "Analysis & Requirements",
     "smRightsGranted": "This link grants Scrum Master rights in the project",
     "joinPending": "Joining...",
     "joinButton": "Join"
@@ -71,7 +73,8 @@
     "estimation": "Estimation",
     "settings": "Settings",
     "roleDev": "Developer",
-    "roleQa": "QA Engineer"
+    "roleQa": "QA Engineer",
+    "roleBa": "Business Analyst"
   },
   "projectSettings": {
     "backToProject": "Back to project",
@@ -117,6 +120,7 @@
     "noMembers": "No members",
     "smGlobal": "SM (global)",
     "projectRole": "Project role",
+    "ownerBadge": "Owner",
     "smInProject": "SM in project",
     "sprintSettingsSaved": "Sprint settings saved",
     "coefficientSaved": "Coefficient saved",
@@ -149,7 +153,7 @@
     "acceptanceCriteria": "Acceptance Criteria",
     "voting": "Voting",
     "progress": "Progress",
-    "noVoters": "No members with Dev/QA role to vote",
+    "noVoters": "No members with Dev/QA/BA role to vote",
     "processing": "Processing...",
     "revealResults": "Reveal results",
     "revealResultsCount": "Reveal results ({count})",
@@ -303,7 +307,7 @@
     "noProjectAccess": "No access to the project",
     "onlySmAction": "Only Scrum Master can perform this action",
     "ticketTitleRequired": "Ticket title is required",
-    "onlyTeamCanVote": "Only team members (DEV/QA) can vote",
+    "onlyTeamCanVote": "Only team members (DEV/QA/BA) can vote",
     "votingNotActive": "Voting is not active",
     "invalidCriteriaValues": "Invalid criteria values",
     "noActiveVoting": "No active voting",
@@ -327,7 +331,8 @@
     "minDurationOneDay": "Minimum duration is 1 day",
     "canSplitOnlyDev": "Only a Dev block can be split",
     "qaBlockExists": "QA block already exists",
-    "userNotProjectMember": "User is not a project member"
+    "userNotProjectMember": "User is not a project member",
+    "cannotChangeOwnerSm": "Cannot change SM status of the project owner"
   },
   "report": {
     "pdfLanguage": "PDF language",
@@ -354,6 +359,7 @@
     "ganttTitle": "Gantt Chart",
     "dev": "Development",
     "qa": "QA",
+    "ba": "Business Analysis",
     "memberBreakdownTitle": "Per-Member Breakdown",
     "ticketSummaryTitle": "Ticket Summary",
     "backlogTitle": "Unplanned Backlog",
@@ -364,8 +370,10 @@
     "dates": "Dates",
     "devAssignee": "Dev",
     "qaAssignee": "QA",
+    "baAssignee": "BA",
     "devDays": "Dev days",
     "qaDays": "QA days",
+    "baDays": "BA days",
     "total": "Total",
     "timeOffs": "Time-offs",
     "available": "Available",

@@ -18,7 +18,8 @@ async function requireProjectSM(projectId: string) {
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership) throw new Error(t("noProjectAccess"));
-  if (!hasSmRights(user, membership))
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true } });
+  if (!hasSmRights(user.id, membership, project))
     throw new Error(t("onlySmAction"));
   return user;
 }

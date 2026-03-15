@@ -141,7 +141,7 @@ export function GanttBoard({ projectId, isSM }: Props) {
     };
 
     if (activeData.type === "backlog" && activeData.ticketId) {
-      const assignmentType = overData.memberRole === "QA" ? ("QA" as const) : ("DEV" as const);
+      const assignmentType = overData.memberRole === "QA" ? ("QA" as const) : overData.memberRole === "BA" ? ("BA" as const) : ("DEV" as const);
       startTransition(async () => {
         const result = await assignTicket(projectId, activeData.ticketId!, overData.memberId, dropDate.toISOString(), assignmentType);
         if (result && "error" in result) alert(result.error);

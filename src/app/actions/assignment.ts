@@ -28,7 +28,8 @@ async function requireProjectSM(projectId: string) {
     where: { userId_projectId: { userId: user.id, projectId } },
   });
   if (!membership) throw new Error(t("noProjectAccess"));
-  if (!hasSmRights(user, membership))
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true } });
+  if (!hasSmRights(user.id, membership, project))
     throw new Error(t("onlySmAction"));
   return user;
 }
@@ -52,7 +53,7 @@ export async function assignTicket(
   ticketId: string,
   userId: string,
   startDateISO: string,
-  dropRole: "DEV" | "QA",
+  dropRole: "DEV" | "QA" | "BA",
 ) {
   const t = await getTranslations("errors");
   await requireProjectSM(projectId);
@@ -65,6 +66,14 @@ export async function assignTicket(
 
   const { scale, coefficient } = await loadProjectDurationConfig(projectId);
   const totalDays = getSpDurationDays(ticket.storyPoints, scale, coefficient);
+
+  if (dropRole === "BA") {
+    await prisma.ticketAssignment.create({
+      data: { ticketId, userId, startDate: new Date(startDateISO), durationDays: totalDays, type: "BA" },
+    });
+    return { success: true };
+  }
+
   const proportion = ticket.devEffortProportion ?? 0.5;
   const devDays = Math.max(1, Math.round(totalDays * proportion));
   const qaDays = Math.max(1, totalDays - devDays);

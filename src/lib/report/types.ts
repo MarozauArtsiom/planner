@@ -8,7 +8,7 @@ export interface ReportSprint {
 export interface ReportMember {
   id: string;
   name: string;
-  role: "DEV" | "QA";
+  role: "DEV" | "QA" | "BA";
 }
 
 export interface ReportAssignment {
@@ -21,7 +21,7 @@ export interface ReportAssignment {
   userId: string;
   startDate: string;
   durationDays: number;
-  type: "DEV" | "QA";
+  type: "DEV" | "QA" | "BA";
   parentAssignmentId: string | null;
 }
 
@@ -38,6 +38,7 @@ export interface ReportBacklogTicket {
   storyPoints: number;
   hasDevAssignment: boolean;
   hasQaAssignment: boolean;
+  hasBaAssignment: boolean;
 }
 
 export interface ReportData {

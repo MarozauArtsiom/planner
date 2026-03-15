@@ -10,7 +10,7 @@
 - `User.role` = `"DEV" | "QA" | null` — командная роль (опциональна).
 - `User.isScrumMaster: Boolean` — глобальный SM-флаг (создание проектов, глобальные права).
 - `ProjectMember.isScrumMaster: Boolean` — per-project SM-флаг.
-- SM-права = `user.isScrumMaster || membership.isScrumMaster`.
+- SM-права = `project.ownerId === userId || membership.isScrumMaster`. Глобальный `User.isScrumMaster` только для создания проектов.
 - Чистый SM (role=null, isScrumMaster=true) — не виден на Ганте, не голосует, всегда в SM-режиме.
 - DEV/QA + SM — виден на Ганте, голосует, переключатель «Команда / SM».
 
@@ -39,7 +39,7 @@
 | Файл | Назначение |
 |---|---|
 | `prisma/schema.prisma` | `User.isScrumMaster`, `ProjectMember.isScrumMaster` |
-| `src/lib/permissions.ts` | `hasSmRights(user, membership)` |
+| `src/lib/permissions.ts` | `hasSmRights(userId, membership, project)` |
 | `src/app/actions/auth.ts` | `register` — role (DEV/QA) + isScrumMaster |
 | `src/app/actions/user.ts` | `updateUserProfile` — role + isScrumMaster |
 | `src/app/actions/project.ts` | `createProject` (user.isScrumMaster), `toggleMemberSm` |
@@ -62,3 +62,5 @@
 | 2026-03-14 | refactor | Регистрация: 2 карточки DEV/QA + чекбокс SM |
 | 2026-03-14 | refactor | Все пользователи с командной ролью голосуют — ограничение canVote по SM-роли удалено |
 | 2026-03-14 | refactor | `User.role` стал nullable — чистый SM (role=null) без Ганта и голосования |
+| 2026-03-15 | refactor | Глобальный `isScrumMaster` только для создания проектов. SM-права в проекте = owner или `ProjectMember.isScrumMaster` |
+| 2026-03-15 | feat | Защита владельца: SM-статус owner нельзя отозвать, бейдж «Owner» в настройках |

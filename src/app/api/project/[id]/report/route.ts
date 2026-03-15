@@ -47,16 +47,17 @@ export async function GET(
     return NextResponse.json({ error: "No sprints found" }, { status: 404 });
 
   const members = await prisma.projectMember.findMany({
-    where: { projectId, role: { in: ["DEV", "QA"] } },
+    where: { projectId, role: { in: ["DEV", "QA", "BA"] } },
     include: { user: { select: { id: true, name: true } } },
     orderBy: { user: { name: "asc" } },
   });
 
+  const roleOrder: Record<string, number> = { DEV: 0, QA: 1, BA: 2 };
   const sortedMembers = members
-    .map((m) => ({ id: m.user.id, name: m.user.name, role: m.role as "DEV" | "QA" }))
+    .map((m) => ({ id: m.user.id, name: m.user.name, role: m.role as "DEV" | "QA" | "BA" }))
     .sort((a, b) => {
       if (a.role === b.role) return a.name.localeCompare(b.name);
-      return a.role === "DEV" ? -1 : 1;
+      return (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9);
     });
 
   const assignments = await prisma.ticketAssignment.findMany({
@@ -98,6 +99,7 @@ export async function GET(
     storyPoints: t.storyPoints!,
     hasDevAssignment: t.ticketAssignments.some((a) => a.type === "DEV"),
     hasQaAssignment: t.ticketAssignments.some((a) => a.type === "QA"),
+    hasBaAssignment: t.ticketAssignments.some((a) => a.type === "BA"),
   }));
 
   const data: ReportData = {
@@ -120,7 +122,7 @@ export async function GET(
       userId: a.userId,
       startDate: a.startDate.toISOString(),
       durationDays: a.durationDays,
-      type: a.type as "DEV" | "QA",
+      type: a.type as "DEV" | "QA" | "BA",
       parentAssignmentId: a.parentAssignmentId,
     })),
     timeOffs: timeOffs.map((t) => ({
