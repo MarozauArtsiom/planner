@@ -17,6 +17,7 @@ import { useGanttStore } from "@/stores/gantt-store";
 import { GanttEmptyState } from "./gantt-empty-state";
 import { GanttTimeline } from "./gantt-timeline";
 import { GanttBacklog } from "./gantt-backlog";
+import { ExportDialog } from "@/components/report/export-dialog";
 import { COLUMN_WIDTH } from "./gantt-header";
 import { createSprint, deleteSprint } from "@/app/actions/sprint";
 import {
@@ -41,6 +42,7 @@ interface Props {
 export function GanttBoard({ projectId, isSM }: Props) {
   const t = useTranslations("gantt");
   const tc = useTranslations("common");
+  const tr = useTranslations("report");
   const { state, error, refresh } = useBoardPolling(projectId);
   const [isPending, startTransition] = useTransition();
   const store = useGanttStore();
@@ -61,6 +63,8 @@ export function GanttBoard({ projectId, isSM }: Props) {
     y: number;
     assignmentId: string;
   } | null>(null);
+
+  const [showExport, setShowExport] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -285,18 +289,25 @@ export function GanttBoard({ projectId, isSM }: Props) {
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex flex-1 flex-col overflow-hidden">
-        {isSM && (
-          <div className="flex items-center gap-2 border-b border-zinc-200 bg-white px-4 py-2 dark:border-zinc-800 dark:bg-zinc-950">
-            <button onClick={handleAddSprint} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50">
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-              {t("addSprint")}
-            </button>
-            <button onClick={handleDeleteLast} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-red-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-red-400">
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
-              {t("deleteLast")}
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2 border-b border-zinc-200 bg-white px-4 py-2 dark:border-zinc-800 dark:bg-zinc-950">
+          {isSM && (
+            <>
+              <button onClick={handleAddSprint} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50">
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                {t("addSprint")}
+              </button>
+              <button onClick={handleDeleteLast} disabled={isPending} className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-red-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-red-400">
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                {t("deleteLast")}
+              </button>
+              <div className="mx-1 h-4 w-px bg-zinc-200 dark:bg-zinc-700" />
+            </>
+          )}
+          <button onClick={() => setShowExport(true)} className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800">
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+            {tr("exportButton")}
+          </button>
+        </div>
 
         <div className="flex flex-1 overflow-hidden">
           <GanttTimeline sprints={state.sprints} members={state.members} assignments={store.assignments} timeOffs={state.timeOffs ?? []} projectId={projectId} isSM={isSM} activeSprintId={state.activeSprintId} onResizeStart={isSM ? handleResizeStart : undefined} onContextMenu={isSM ? handleBlockContextMenu : undefined} onDelete={isSM ? handleDeleteBlock : undefined} onToggleTimeOff={isSM ? handleToggleTimeOff : undefined} onRefresh={refresh} />
@@ -309,6 +320,16 @@ export function GanttBoard({ projectId, isSM }: Props) {
           {t("dragHint")}
         </div>
       </DragOverlay>
+
+      {showExport && state && (
+        <ExportDialog
+          projectId={projectId}
+          sprints={state.sprints}
+          activeSprintId={state.activeSprintId}
+          backlog={state.backlog}
+          onClose={() => setShowExport(false)}
+        />
+      )}
 
       {contextMenu && (
         <>

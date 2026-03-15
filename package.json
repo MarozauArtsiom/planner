@@ -17,6 +17,8 @@
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
     "date-fns": "^4.1.0",
+    "jspdf": "^4.2.0",
+    "jspdf-autotable": "^5.0.7",
     "next": "16.1.6",
     "next-intl": "^4.8.3",
     "papaparse": "^5.5.3",
