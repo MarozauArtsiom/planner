@@ -5,24 +5,27 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  if (process.env.TURSO_DATABASE_URL) {
+  const tursoUrl = process.env.TURSO_DATABASE_URL;
+  if (tursoUrl) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PrismaLibSql } = require("@prisma/adapter-libsql");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { createClient } = require("@libsql/client");
     const client = createClient({
-      url: process.env.TURSO_DATABASE_URL,
+      url: tursoUrl,
       authToken: process.env.TURSO_AUTH_TOKEN,
     });
-    return new PrismaClient({ adapter: new PrismaLibSql(client) });
+    return new PrismaClient({
+      adapter: new PrismaLibSql(client),
+      datasourceUrl: tursoUrl,
+    });
   }
 
+  const dbUrl = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
-  const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-  });
-  return new PrismaClient({ adapter });
+  const adapter = new PrismaBetterSqlite3({ url: dbUrl });
+  return new PrismaClient({ adapter, datasourceUrl: dbUrl });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
