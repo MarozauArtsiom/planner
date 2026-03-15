@@ -7,6 +7,7 @@ import { calculateEstimation } from "@/lib/estimation-engine";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  try {
   const userId = await getSession();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -147,4 +148,8 @@ export async function GET(request: NextRequest) {
       isScrumMaster: isSM,
     },
   });
+  } catch (e) {
+    console.error("[GET /api/estimation/session] Error:", e);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

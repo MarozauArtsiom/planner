@@ -9,6 +9,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  try {
   const userId = await getSession();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -133,4 +134,8 @@ export async function GET(
   };
 
   return NextResponse.json(data);
+  } catch (e) {
+    console.error("[GET /api/project/report] Error:", e);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

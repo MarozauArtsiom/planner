@@ -8,6 +8,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  try {
   const userId = await getSession();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -56,4 +57,8 @@ export async function GET(
       endDate: s.endDate.toISOString(),
     })),
   });
+  } catch (e) {
+    console.error("[GET /api/project/settings] Error:", e);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }

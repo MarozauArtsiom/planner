@@ -18,10 +18,10 @@ export async function register(formData: FormData) {
   if (!password || password.length < 4)
     return { error: t("passwordMin4") };
 
-  const existing = await prisma.user.findUnique({ where: { name } });
-  if (existing) return { error: t("nickTaken") };
-
   try {
+    const existing = await prisma.user.findUnique({ where: { name } });
+    if (existing) return { error: t("nickTaken") };
+
     const passwordHash = await hashPassword(password);
     const user = await prisma.user.create({
       data: { passwordHash, name, isScrumMaster },
@@ -29,6 +29,7 @@ export async function register(formData: FormData) {
 
     await setSession(user.id);
   } catch (e) {
+    console.error("[register] Error:", e);
     const message = e instanceof Error ? e.message : t("unknownError");
     return { error: t("registerError", { message }) };
   }
@@ -53,6 +54,7 @@ export async function login(formData: FormData) {
 
     await setSession(user.id);
   } catch (e) {
+    console.error("[login] Error:", e);
     const message = e instanceof Error ? e.message : t("unknownError");
     return { error: t("loginError", { message }) };
   }

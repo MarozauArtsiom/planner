@@ -10,10 +10,15 @@ export async function updateUserProfile(formData: FormData): Promise<void> {
   const userId = await getSession();
   if (!userId) redirect("/login");
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { isScrumMaster },
-  });
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isScrumMaster },
+    });
+  } catch (e) {
+    console.error("[updateUserProfile] Error:", e);
+    throw e;
+  }
 
   redirect("/settings?saved=1");
 }

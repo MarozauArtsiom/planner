@@ -6,6 +6,7 @@ import { hasSmRights } from "@/lib/permissions";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  try {
   const userId = await getSession();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -130,4 +131,8 @@ export async function GET(request: NextRequest) {
     activeSprintId: project?.activeSprintId ?? null,
     currentUser: { id: user.id, role: membership.role, isScrumMaster: hasSmRights(userId, membership, project) },
   });
+  } catch (e) {
+    console.error("[GET /api/board/state] Error:", e);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
