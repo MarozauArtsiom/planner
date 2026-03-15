@@ -15,6 +15,7 @@ import { VotingForm } from "./voting-form";
 import { VotingResults } from "./voting-results";
 import { VoteDetails } from "./vote-details";
 import { TicketForm } from "./ticket-form";
+import { TicketImportModal } from "./ticket-import-modal";
 import {
   setActiveTicket,
   revealVotes,
@@ -36,6 +37,7 @@ const ROLE_STYLES: Record<string, string> = {
 export function EstimationBoard({ projectId }: { projectId: string }) {
   const { state, refresh } = useEstimationPolling(projectId, 2000);
   const [showTicketForm, setShowTicketForm] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [selectedSp, setSelectedSp] = useState<number | null>(null);
   const [viewingTicketId, setViewingTicketId] = useState<string | null>(null);
@@ -168,19 +170,31 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
               Тикеты
             </h2>
             {isSM && (
-              <button
-                type="button"
-                onClick={() => setShowTicketForm((v) => !v)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  {showTicketForm ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  )}
-                </svg>
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setShowImportModal(true)}
+                  title="Импорт тикетов"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowTicketForm((v) => !v)}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    {showTicketForm ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    )}
+                  </svg>
+                </button>
+              </div>
             )}
           </div>
 
@@ -474,6 +488,14 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
           </div>
         </main>
       </div>
+
+      {showImportModal && (
+        <TicketImportModal
+          projectId={projectId}
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => refresh()}
+        />
+      )}
     </div>
   );
 }

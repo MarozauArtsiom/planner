@@ -210,6 +210,39 @@ export async function restartVoting(projectId: string) {
   return { success: true };
 }
 
+export interface TicketImportInput {
+  externalId: string | null;
+  title: string;
+  externalUrl: string | null;
+  description: string | null;
+  acceptanceCriteria: string | null;
+}
+
+export async function importTickets(
+  projectId: string,
+  tickets: TicketImportInput[],
+) {
+  await requireProjectSM(projectId);
+
+  if (!tickets.length) return { error: "Нет тикетов для импорта" };
+
+  const valid = tickets.filter((t) => t.title?.trim());
+  if (!valid.length) return { error: "Нет тикетов с названием" };
+
+  await prisma.ticket.createMany({
+    data: valid.map((t) => ({
+      title: t.title.trim(),
+      externalId: t.externalId?.trim() || null,
+      externalUrl: t.externalUrl?.trim() || null,
+      description: t.description?.trim() || null,
+      acceptanceCriteria: t.acceptanceCriteria?.trim() || null,
+      projectId,
+    })),
+  });
+
+  return { success: true, count: valid.length };
+}
+
 export async function deleteTicket(projectId: string, ticketId: string) {
   await requireProjectSM(projectId);
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-03-15 (Эпик 2: Импорт тикетов из CSV)
+- **feat(csv-parser):** Клиентский парсер CSV/TSV на базе papaparse с автоопределением разделителя, маппингом колонок по алиасам и валидацией (title обязательно)
+- **feat(estimation):** Server action `importTickets` — массовое создание тикетов через `prisma.ticket.createMany()`, SM-only
+- **feat(estimation):** Модал импорта тикетов: два режима ввода (вставка текста / drag-and-drop файла), инструкция по формату, таблица предпросмотра с подсветкой ошибок
+- **feat(estimation-board):** Кнопка импорта (upload icon) в сайдбаре рядом с «+» для SM
+
 ## 2026-03-15 (Эпик 7: Настройки проекта для SM)
 - **feat(schema):** Новые поля в Project: `sprintDurationWeeks`, `sprintStartDay`, `sprintNameTemplate`, `taskCoefficient`, `activeSprintId`
 - **feat(schema):** Новая модель `SpScaleItem` — настраиваемая шкала SP per-project

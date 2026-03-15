@@ -35,15 +35,25 @@
 - Клик на оценённый тикет в sidebar открывает модал с полной статистикой (результаты + таблица голосов).
 - SM в модале может переоценить тикет или изменить SP через Fibonacci-selector.
 
+### Story 2.5: Импорт тикетов из CSV
+- SM может массово импортировать тикеты через модальное окно в сайдбаре оценки.
+- Два способа ввода: вставка текста в textarea или drag-and-drop / выбор CSV-файла.
+- Поддерживаемые колонки: `externalId`, `title` (обязательно), `externalUrl`, `description`, `acceptanceCriteria`.
+- Разделитель (запятая или табуляция) определяется автоматически. Первая строка трактуется как заголовок, если совпадает с известными именами колонок.
+- Перед импортом отображается таблица предпросмотра с подсветкой ошибок валидации.
+- Парсинг CSV выполняется на фронтенде (papaparse), бэкенд принимает массив объектов и создаёт тикеты через `prisma.ticket.createMany()`.
+
 ## Ключевые файлы
 
 | Файл | Назначение |
 |---|---|
 | `prisma/schema.prisma` | Модели EstimationSession, Vote, Ticket (devEffortProportion) |
 | `src/lib/estimation-engine.ts` | Расчёт медиан, SP, пропорции Dev/QA |
+| `src/lib/csv-parser.ts` | Парсинг CSV/TSV, маппинг колонок на поля тикета, валидация |
 | `src/components/estimation/vote-details.tsx` | Таблица индивидуальных голосов с outlier-детекцией |
+| `src/components/estimation/ticket-import-modal.tsx` | Модал импорта CSV: drag-and-drop, textarea, предпросмотр |
 | `src/app/api/estimation/ticket-stats/route.ts` | API статистики любого тикета (не только активного) |
-| `src/app/actions/estimation.ts` | Server actions: createTicket, setActiveTicket, submitVote, revealVotes, acceptEstimation, restartVoting, deleteTicket |
+| `src/app/actions/estimation.ts` | Server actions: createTicket, importTickets, setActiveTicket, submitVote, revealVotes, acceptEstimation, restartVoting, deleteTicket |
 | `src/app/api/estimation/session/route.ts` | GET-эндпоинт для polling (состояние сессии, активный тикет, голоса, результаты) |
 | `src/hooks/use-estimation-polling.ts` | Клиентский хук для polling с интервалом 2 сек |
 | `src/app/project/[id]/estimation/page.tsx` | Server-компонент страницы оценки (project-scoped) |
@@ -69,3 +79,4 @@
 | 2026-03-14 | feat | SM: подсветка высокого Risk (amber), выбросов (IQR-метод, красный бордер), строка медианы |
 | 2026-03-14 | feat | Клик на оценённый тикет в sidebar — модал со статистикой + SM-кнопки (переоценить/изменить SP) |
 | 2026-03-14 | feat | API `/api/estimation/ticket-stats` — статистика любого тикета |
+| 2026-03-15 | feat | Импорт тикетов из CSV/TSV: модал с drag-and-drop, textarea, предпросмотром и валидацией |
