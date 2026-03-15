@@ -52,6 +52,11 @@ export interface VoterStatus {
   voted: boolean;
 }
 
+export interface SpScaleOption {
+  value: number;
+  label: string;
+}
+
 export interface SessionState {
   sessionId: string | null;
   status: "IDLE" | "VOTING" | "REVEALED";
@@ -61,6 +66,7 @@ export interface SessionState {
   individualVotes: IndividualVote[] | null;
   voterStatus: VoterStatus[] | null;
   tickets: TicketListItem[];
+  spScale: SpScaleOption[];
   currentUser: {
     id: string;
     name: string;

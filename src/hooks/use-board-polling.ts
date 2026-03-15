@@ -50,6 +50,7 @@ export interface BoardState {
   assignments: BoardAssignment[];
   backlog: BacklogTicket[];
   timeOffs: BoardTimeOff[];
+  activeSprintId: string | null;
   currentUser: { id: string; role: string | null; isScrumMaster: boolean };
 }
 

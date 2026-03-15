@@ -41,7 +41,8 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 ### Ключевые модели
 
 - **User** — login/passwordHash для авторизации. Глобальный SM-флаг `isScrumMaster: Boolean` (право создавать проекты). Поле `role` deprecated — роль теперь per-project.
-- **Project** — корневая сущность. `ownerId` — SM, создавший проект.
+- **Project** — корневая сущность. `ownerId` — SM, создавший проект. Настройки спринта (`sprintDurationWeeks`, `sprintStartDay`, `sprintNameTemplate`), `taskCoefficient`, `activeSprintId` (FK на Sprint).
+- **SpScaleItem** — настраиваемая шкала SP per-project. `value` (число SP), `label` (описание для команды), `durationDays` (рабочие дни на Ганте). Unique `[projectId, value]`. Дефолтная шкала сидится при создании проекта.
 - **ProjectMember** — связь User ↔ Project. Unique constraint `[userId, projectId]`. Per-project роль `role` (`"DEV" | "QA" | null`). Per-project SM-флаг `isScrumMaster: Boolean`.
 - **InviteLink** — invite-ссылка для проекта. Уникальный `token`, флаг `grantsSm` (даёт SM-права при присоединении), опциональный `label`. Несколько ссылок на проект.
 - **Sprint, Ticket, EstimationSession** — привязаны к Project через `projectId`.
@@ -62,14 +63,14 @@ Serverless-функции на Vercel не держат долгие WebSocket-�
 - `/` — список проектов пользователя
 - `/project/[id]` — Board проекта (Gantt)
 - `/project/[id]/estimation` — сессия оценки
-- `/project/[id]/settings` — настройки проекта (invite-ссылки, участники с ролями и SM toggle)
+- `/project/[id]/settings` — настройки проекта (спринт, шкала SP, коэффициент, активный спринт, invite-ссылки, участники)
 - `/invite/[token]` — присоединение к проекту (выбор роли DEV/QA)
 - `/settings` — профиль пользователя (isScrumMaster)
 
 ## 7. Логика диаграммы Ганта
 
 - **Optimistic UI:** При drag/resize Скрам-мастер видит мгновенный результат через Zustand. Параллельно Server Action сохраняет в БД. При ошибке сервера — откат UI.
-- **SP -> длительность:** 1 SP = 2 дня, 2 SP = 3 дня, 3 SP = 5 дней. Ручной resize перезаписывает расчетную длину.
+- **SP -> длительность:** Настраиваемая шкала `SpScaleItem` per-project (дефолт: 1→2, 2→3, 3→5, 5→8). `getSpDurationDays(sp, scale, coefficient)` из `src/lib/sp-scale.ts`. Коэффициент проекта применяется при назначении, НЕ при ручном resize.
 - **Finish-to-Start:** При сдвиге Dev-блока QA-блок автоматически двигается следом.
 - **Математика дат:** date-fns для расчета рабочих дней и «разрывов» отпусков.
 

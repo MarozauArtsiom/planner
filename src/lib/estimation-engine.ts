@@ -26,17 +26,23 @@ function median(values: number[]): number {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-/**
- * 2-3 -> 1 SP, 4-5 -> 2 SP, 6-8 -> 3 SP, 9+ -> 5 SP
- */
-function scoreToSP(total: number): number {
-  if (total <= 3) return 1;
-  if (total <= 5) return 2;
-  if (total <= 8) return 3;
-  return 5;
+const DEFAULT_SP_VALUES = [1, 2, 3, 5, 8, 13];
+
+function scoreToSP(total: number, availableValues?: number[]): number {
+  const values = availableValues && availableValues.length > 0
+    ? [...availableValues].sort((a, b) => a - b)
+    : DEFAULT_SP_VALUES;
+
+  if (total <= 3) return values[0] ?? 1;
+  if (total <= 5) return values[Math.min(1, values.length - 1)];
+  if (total <= 8) return values[Math.min(2, values.length - 1)];
+  return values[Math.min(3, values.length - 1)];
 }
 
-export function calculateEstimation(votes: VoteData[]): EstimationResult {
+export function calculateEstimation(
+  votes: VoteData[],
+  availableSpValues?: number[],
+): EstimationResult {
   if (votes.length === 0) {
     return {
       avgDevEffort: 0,
@@ -64,7 +70,7 @@ export function calculateEstimation(votes: VoteData[]): EstimationResult {
     avgRisk: round2(avgRisk),
     avgUncertainty: round2(avgUncertainty),
     totalScore: round2(totalScore),
-    recommendedSp: scoreToSP(totalScore),
+    recommendedSp: scoreToSP(totalScore, availableSpValues),
     devProportion: round2(devProportion),
   };
 }

@@ -69,7 +69,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (session.status === "REVEALED") {
-      const calc = calculateEstimation(votes);
+      const spScaleItems = await prisma.spScaleItem.findMany({
+        where: { projectId },
+        select: { value: true },
+      });
+      const spValues = spScaleItems.map((s) => s.value);
+      const calc = calculateEstimation(votes, spValues.length > 0 ? spValues : undefined);
       results = { ...calc, voteCount: votes.length };
       individualVotes = votes.map((v) => ({
         oderId: v.user.id,
@@ -90,6 +95,12 @@ export async function GET(request: NextRequest) {
     storyPoints: number | null;
     isActive: boolean;
   }[] = [];
+
+  const spScaleForOptions = await prisma.spScaleItem.findMany({
+    where: { projectId },
+    orderBy: { value: "asc" },
+    select: { value: true, label: true },
+  });
 
   const allTickets = await prisma.ticket.findMany({
     where: { projectId },
@@ -126,6 +137,7 @@ export async function GET(request: NextRequest) {
     individualVotes,
     voterStatus,
     tickets,
+    spScale: spScaleForOptions,
     currentUser: {
       id: user.id,
       name: user.name,

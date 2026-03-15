@@ -23,6 +23,11 @@ export async function GET(request: NextRequest) {
   if (!membership)
     return NextResponse.json({ error: "Not a member" }, { status: 403 });
 
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { activeSprintId: true },
+  });
+
   const sprints = await prisma.sprint.findMany({
     where: { projectId },
     orderBy: { startDate: "asc" },
@@ -119,6 +124,7 @@ export async function GET(request: NextRequest) {
       userId: t.userId,
       date: t.date.toISOString(),
     })),
+    activeSprintId: project?.activeSprintId ?? null,
     currentUser: { id: user.id, role: membership.role, isScrumMaster: user.isScrumMaster || membership.isScrumMaster },
   });
 }

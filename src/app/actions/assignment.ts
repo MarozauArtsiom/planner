@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { hasSmRights } from "@/lib/permissions";
-import { spToDurationDays, workingDaysToCalendarSpan, toDateKey } from "@/lib/date-utils";
+import { workingDaysToCalendarSpan, toDateKey } from "@/lib/date-utils";
+import { getSpDurationDays, type SpScaleEntry } from "@/lib/sp-scale";
 import { addDays } from "date-fns";
 
 async function getUserTimeOffSet(userId: string): Promise<Set<string>> {
@@ -30,6 +31,20 @@ async function requireProjectSM(projectId: string) {
   return user;
 }
 
+async function loadProjectDurationConfig(projectId: string) {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: {
+      taskCoefficient: true,
+      spScaleItems: { select: { value: true, label: true, durationDays: true } },
+    },
+  });
+  return {
+    scale: (project?.spScaleItems ?? []) as SpScaleEntry[],
+    coefficient: project?.taskCoefficient ?? 1.0,
+  };
+}
+
 export async function assignTicket(
   projectId: string,
   ticketId: string,
@@ -45,7 +60,8 @@ export async function assignTicket(
   if (ticket.storyPoints == null)
     return { error: "Тикет не оценён" };
 
-  const totalDays = spToDurationDays(ticket.storyPoints);
+  const { scale, coefficient } = await loadProjectDurationConfig(projectId);
+  const totalDays = getSpDurationDays(ticket.storyPoints, scale, coefficient);
   const proportion = ticket.devEffortProportion ?? 0.5;
   const devDays = Math.max(1, Math.round(totalDays * proportion));
   const qaDays = Math.max(1, totalDays - devDays);
@@ -211,7 +227,8 @@ export async function splitTicketAssignment(
   if (assignment.childAssignments.length > 0)
     return { error: "QA-блок уже существует" };
 
-  const totalDays = spToDurationDays(assignment.ticket.storyPoints ?? 1);
+  const { scale, coefficient } = await loadProjectDurationConfig(projectId);
+  const totalDays = getSpDurationDays(assignment.ticket.storyPoints ?? 1, scale, coefficient);
   const proportion = assignment.ticket.devEffortProportion ?? 0.5;
   const devDays = Math.max(1, Math.round(totalDays * proportion));
   const qaDays = Math.max(1, totalDays - devDays);

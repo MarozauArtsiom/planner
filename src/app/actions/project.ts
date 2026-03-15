@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { hasSmRights } from "@/lib/permissions";
+import { DEFAULT_SP_SCALE, type SpScaleEntry } from "@/lib/sp-scale";
+import { recalcFutureSprints } from "@/app/actions/sprint";
 
 const VALID_ROLES = ["DEV", "QA"] as const;
 
@@ -33,6 +35,13 @@ export async function createProject(formData: FormData) {
       name,
       ownerId: user.id,
       members: { create: { userId: user.id, isScrumMaster: true, role: user.role } },
+      spScaleItems: {
+        create: DEFAULT_SP_SCALE.map((item) => ({
+          value: item.value,
+          label: item.label,
+          durationDays: item.durationDays,
+        })),
+      },
     },
   });
 
@@ -161,4 +170,154 @@ export async function updateMemberRole(
   });
 
   return { success: true, role };
+}
+
+export async function updateProjectSettings(
+  projectId: string,
+  settings: {
+    sprintDurationWeeks?: number;
+    sprintStartDay?: number;
+    sprintNameTemplate?: string;
+    taskCoefficient?: number;
+  },
+) {
+  const user = await requireUser();
+  const membership = await prisma.projectMember.findUnique({
+    where: { userId_projectId: { userId: user.id, projectId } },
+  });
+  if (!membership || !hasSmRights(user, membership)) {
+    return { error: "Только Scrum Master может менять настройки" };
+  }
+
+  if (settings.sprintDurationWeeks != null) {
+    if (settings.sprintDurationWeeks < 1 || settings.sprintDurationWeeks > 4) {
+      return { error: "Длительность спринта: 1-4 недели" };
+    }
+  }
+  if (settings.sprintStartDay != null) {
+    if (settings.sprintStartDay < 0 || settings.sprintStartDay > 6) {
+      return { error: "День старта: 0 (Вс) - 6 (Сб)" };
+    }
+  }
+  if (settings.taskCoefficient != null) {
+    if (settings.taskCoefficient < 0.1 || settings.taskCoefficient > 5.0) {
+      return { error: "Коэффициент: от 0.1 до 5.0" };
+    }
+  }
+
+  const oldProject = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { sprintDurationWeeks: true },
+  });
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: {
+      ...(settings.sprintDurationWeeks != null && { sprintDurationWeeks: settings.sprintDurationWeeks }),
+      ...(settings.sprintStartDay != null && { sprintStartDay: settings.sprintStartDay }),
+      ...(settings.sprintNameTemplate != null && { sprintNameTemplate: settings.sprintNameTemplate }),
+      ...(settings.taskCoefficient != null && { taskCoefficient: Math.round(settings.taskCoefficient * 100) / 100 }),
+    },
+  });
+
+  if (
+    settings.sprintDurationWeeks != null &&
+    oldProject &&
+    settings.sprintDurationWeeks !== oldProject.sprintDurationWeeks
+  ) {
+    await recalcFutureSprints(projectId, settings.sprintDurationWeeks);
+  }
+
+  return { success: true };
+}
+
+export async function setActiveSprint(projectId: string, sprintId: string | null) {
+  const user = await requireUser();
+  const membership = await prisma.projectMember.findUnique({
+    where: { userId_projectId: { userId: user.id, projectId } },
+  });
+  if (!membership || !hasSmRights(user, membership)) {
+    return { error: "Только Scrum Master может менять активный спринт" };
+  }
+
+  if (sprintId) {
+    const sprint = await prisma.sprint.findUnique({ where: { id: sprintId } });
+    if (!sprint || sprint.projectId !== projectId) {
+      return { error: "Спринт не найден" };
+    }
+  }
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { activeSprintId: sprintId },
+  });
+
+  return { success: true };
+}
+
+export async function updateSpScale(projectId: string, items: SpScaleEntry[]) {
+  const user = await requireUser();
+  const membership = await prisma.projectMember.findUnique({
+    where: { userId_projectId: { userId: user.id, projectId } },
+  });
+  if (!membership || !hasSmRights(user, membership)) {
+    return { error: "Только Scrum Master может менять шкалу SP" };
+  }
+
+  if (items.length === 0) {
+    return { error: "Шкала должна содержать хотя бы одно значение" };
+  }
+
+  const values = items.map((i) => i.value);
+  if (new Set(values).size !== values.length) {
+    return { error: "Значения SP не должны повторяться" };
+  }
+
+  for (const item of items) {
+    if (item.value < 1) return { error: "SP должно быть >= 1" };
+    if (item.durationDays < 1) return { error: "Длительность должна быть >= 1 дня" };
+    if (!item.label.trim()) return { error: "Описание не может быть пустым" };
+  }
+
+  await prisma.$transaction([
+    prisma.spScaleItem.deleteMany({ where: { projectId } }),
+    ...items.map((item) =>
+      prisma.spScaleItem.create({
+        data: {
+          projectId,
+          value: item.value,
+          label: item.label.trim(),
+          durationDays: item.durationDays,
+        },
+      }),
+    ),
+  ]);
+
+  return { success: true };
+}
+
+export async function resetSpScale(projectId: string) {
+  const user = await requireUser();
+  const membership = await prisma.projectMember.findUnique({
+    where: { userId_projectId: { userId: user.id, projectId } },
+  });
+  if (!membership || !hasSmRights(user, membership)) {
+    return { error: "Только Scrum Master может менять шкалу SP" };
+  }
+
+  await prisma.$transaction([
+    prisma.spScaleItem.deleteMany({ where: { projectId } }),
+    ...DEFAULT_SP_SCALE.map((item) =>
+      prisma.spScaleItem.create({
+        data: {
+          projectId,
+          value: item.value,
+          label: item.label,
+          durationDays: item.durationDays,
+        },
+      }),
+    ),
+  ]);
+
+  return { success: true };
 }

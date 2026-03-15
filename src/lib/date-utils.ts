@@ -15,8 +15,13 @@ export function isWednesday(date: Date): boolean {
   return getDay(date) === WEDNESDAY;
 }
 
-export function getSprintEndDate(startDate: Date): Date {
-  const end = addDays(startOfDay(startDate), 6);
+export function isCorrectStartDay(date: Date, dayOfWeek: number): boolean {
+  return getDay(date) === dayOfWeek;
+}
+
+export function getSprintEndDate(startDate: Date, durationWeeks: number = 1): Date {
+  const totalDays = durationWeeks * 7 - 1;
+  const end = addDays(startOfDay(startDate), totalDays);
   end.setHours(23, 59, 59, 999);
   return end;
 }
@@ -110,4 +115,26 @@ export function countWorkingDays(
   }
 
   return Math.max(1, count);
+}
+
+export const DAY_NAMES = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"] as const;
+
+function getQuarter(date: Date): string {
+  const month = date.getMonth();
+  if (month < 3) return "Q1";
+  if (month < 6) return "Q2";
+  if (month < 9) return "Q3";
+  return "Q4";
+}
+
+export function renderSprintName(
+  template: string,
+  number: number,
+  startDate: Date,
+): string {
+  return template
+    .replace(/\{number\}/g, String(number))
+    .replace(/\{date\}/g, format(startDate, "dd.MM"))
+    .replace(/\{quarter\}/g, getQuarter(startDate))
+    .replace(/\{year\}/g, format(startDate, "yyyy"));
 }

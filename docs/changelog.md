@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-03-15 (Эпик 7: Настройки проекта для SM)
+- **feat(schema):** Новые поля в Project: `sprintDurationWeeks`, `sprintStartDay`, `sprintNameTemplate`, `taskCoefficient`, `activeSprintId`
+- **feat(schema):** Новая модель `SpScaleItem` — настраиваемая шкала SP per-project
+- **feat(sp-scale):** Хелпер `getSpDurationDays()` — длительность из шкалы проекта с коэффициентом
+- **feat(sprint):** Длительность спринта 1-4 недели, настраиваемый день старта вместо хардкода Ср-Вт
+- **feat(sprint):** Шаблон нейминга спринтов с переменными `{number}`, `{date}`, `{quarter}`, `{year}`
+- **feat(sprint):** `recalcFutureSprints` — пересчёт будущих спринтов при изменении длительности
+- **feat(active-sprint):** `activeSprintId` на проекте, автоскролл борды к активному спринту
+- **feat(active-sprint):** Кнопка «Сделать активным» на заголовке спринта для SM
+- **feat(sp-scale):** Редактируемая шкала SP в Settings (значение, описание, дни), сброс к дефолту
+- **feat(estimation):** SP-selector показывает лейблы из шкалы проекта при голосовании
+- **feat(coefficient):** Коэффициент задач — множитель длительности при назначении
+- **feat(settings):** 5 новых секций настроек: спринт, шаблон имени, активный спринт, шкала SP, коэффициент
+- **feat(api):** `GET /api/project/[id]/settings` — конфигурация проекта
+- **refactor(assignment):** `assignTicket`, `splitTicketAssignment` используют шкалу проекта и коэффициент
+- **refactor(estimation-engine):** `calculateEstimation` принимает опциональные SP-значения проекта
+
 ## 2026-03-15 (Per-project роли и множественные invite-ссылки)
 - **refactor(schema):** Роль (`role`) перенесена с `User` на `ProjectMember` — теперь per-project
 - **feat(schema):** Новая модель `InviteLink` — множественные invite-ссылки с флагом `grantsSm`

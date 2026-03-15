@@ -25,6 +25,7 @@ interface Props {
   timeOffs: BoardTimeOff[];
   projectId: string;
   isSM: boolean;
+  activeSprintId?: string | null;
   onResizeStart?: (
     id: string,
     edge: "left" | "right",
@@ -33,6 +34,7 @@ interface Props {
   onContextMenu?: (id: string, e: React.MouseEvent) => void;
   onDelete?: (id: string) => void;
   onToggleTimeOff?: (userId: string, date: Date) => void;
+  onRefresh?: () => void;
 }
 
 export function GanttTimeline({
@@ -42,10 +44,12 @@ export function GanttTimeline({
   timeOffs,
   projectId,
   isSM,
+  activeSprintId,
   onResizeStart,
   onContextMenu,
   onDelete,
   onToggleTimeOff,
+  onRefresh,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const didScrollRef = useRef(false);
@@ -61,35 +65,32 @@ export function GanttTimeline({
     if (didScrollRef.current || !scrollRef.current || sprints.length === 0)
       return;
 
-    const today = startOfDay(new Date());
     const firstStart = startOfDay(new Date(sprints[0].startDate));
 
-    const currentSprint = sprints.find((s) => {
-      const sStart = startOfDay(new Date(s.startDate));
-      const sEnd = startOfDay(new Date(s.endDate));
-      return today >= sStart && today <= sEnd;
-    });
+    let targetSprint = activeSprintId
+      ? sprints.find((s) => s.id === activeSprintId)
+      : undefined;
 
-    let targetScroll: number;
-
-    if (currentSprint) {
-      const sprintStartOffset = differenceInCalendarDays(
-        startOfDay(new Date(currentSprint.startDate)),
-        firstStart,
-      );
-      targetScroll = sprintStartOffset * COLUMN_WIDTH;
-    } else {
-      const lastSprint = sprints[sprints.length - 1];
-      const lastStartOffset = differenceInCalendarDays(
-        startOfDay(new Date(lastSprint.startDate)),
-        firstStart,
-      );
-      targetScroll = lastStartOffset * COLUMN_WIDTH;
+    if (!targetSprint) {
+      const today = startOfDay(new Date());
+      targetSprint = sprints.find((s) => {
+        const sStart = startOfDay(new Date(s.startDate));
+        const sEnd = startOfDay(new Date(s.endDate));
+        return today >= sStart && today <= sEnd;
+      });
     }
 
-    scrollRef.current.scrollLeft = Math.max(0, targetScroll);
+    if (!targetSprint) {
+      targetSprint = sprints[sprints.length - 1];
+    }
+
+    const offset = differenceInCalendarDays(
+      startOfDay(new Date(targetSprint.startDate)),
+      firstStart,
+    );
+    scrollRef.current.scrollLeft = Math.max(0, offset * COLUMN_WIDTH);
     didScrollRef.current = true;
-  }, [sprints]);
+  }, [sprints, activeSprintId]);
 
   return (
     <div
@@ -115,6 +116,8 @@ export function GanttTimeline({
               sprints={sprints}
               projectId={projectId}
               isSM={isSM}
+              activeSprintId={activeSprintId}
+              onRefresh={onRefresh}
             />
           </div>
 

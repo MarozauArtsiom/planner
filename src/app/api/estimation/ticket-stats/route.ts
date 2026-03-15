@@ -33,9 +33,16 @@ export async function GET(request: NextRequest) {
     include: { user: { select: { id: true, name: true } } },
   });
 
-  const results = votes.length > 0
-    ? { ...calculateEstimation(votes), voteCount: votes.length }
-    : null;
+  let results = null;
+  if (votes.length > 0) {
+    const spScaleItems = await prisma.spScaleItem.findMany({
+      where: { projectId },
+      select: { value: true },
+    });
+    const spValues = spScaleItems.map((s) => s.value);
+    const calc = calculateEstimation(votes, spValues.length > 0 ? spValues : undefined);
+    results = { ...calc, voteCount: votes.length };
+  }
 
   const individualVotes = votes.map((v) => ({
     oderId: v.user.id,

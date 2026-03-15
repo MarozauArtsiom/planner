@@ -166,7 +166,12 @@ export async function acceptEstimation(projectId: string, overrideSp?: number) {
     where: { ticketId: session.activeTicketId },
   });
 
-  const result = calculateEstimation(votes);
+  const spScaleItems = await prisma.spScaleItem.findMany({
+    where: { projectId },
+    select: { value: true },
+  });
+  const spValues = spScaleItems.map((s) => s.value);
+  const result = calculateEstimation(votes, spValues.length > 0 ? spValues : undefined);
   const sp = overrideSp && overrideSp > 0 ? overrideSp : result.recommendedSp;
 
   await prisma.ticket.update({

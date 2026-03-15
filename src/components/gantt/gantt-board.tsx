@@ -450,10 +450,12 @@ export function GanttBoard({ projectId, isSM }: Props) {
             timeOffs={state.timeOffs ?? []}
             projectId={projectId}
             isSM={isSM}
+            activeSprintId={state.activeSprintId}
             onResizeStart={isSM ? handleResizeStart : undefined}
             onContextMenu={isSM ? handleBlockContextMenu : undefined}
             onDelete={isSM ? handleDeleteBlock : undefined}
             onToggleTimeOff={isSM ? handleToggleTimeOff : undefined}
+            onRefresh={refresh}
           />
 
           {isSM && <GanttBacklog tickets={state.backlog} />}

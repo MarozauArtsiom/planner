@@ -9,6 +9,7 @@ import {
   type EstimationResults,
   type IndividualVote,
   type VoterStatus,
+  type SpScaleOption,
 } from "@/hooks/use-estimation-polling";
 import { VotingForm } from "./voting-form";
 import { VotingResults } from "./voting-results";
@@ -373,6 +374,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                             onAccept={(sp) => act(() => acceptEstimation(projectId, sp))}
                             onRestart={() => act(() => restartVoting(projectId))}
                             isPending={isPending}
+                            spScale={state.spScale}
                           />
                         )}
                       </>
@@ -444,6 +446,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                                 });
                               }}
                               isPending={isPending}
+                              spScale={state.spScale}
                             />
                           )}
                           {!ticketStats.results && (
@@ -584,7 +587,7 @@ function SMVotingPanel({
   );
 }
 
-const SP_OPTIONS = [1, 2, 3, 5, 8, 13];
+const DEFAULT_SP_OPTIONS = [1, 2, 3, 5, 8, 13];
 
 function SpAcceptPanel({
   recommendedSp,
@@ -593,6 +596,7 @@ function SpAcceptPanel({
   onAccept,
   onRestart,
   isPending,
+  spScale,
 }: {
   recommendedSp: number;
   selectedSp: number | null;
@@ -600,8 +604,12 @@ function SpAcceptPanel({
   onAccept: (sp: number) => void;
   onRestart: () => void;
   isPending: boolean;
+  spScale?: SpScaleOption[];
 }) {
   const activeSp = selectedSp ?? recommendedSp;
+  const options = spScale && spScale.length > 0
+    ? spScale
+    : DEFAULT_SP_OPTIONS.map((v) => ({ value: v, label: "" }));
 
   return (
     <div className="mt-6 space-y-4">
@@ -610,20 +618,29 @@ function SpAcceptPanel({
           Story Points
         </p>
         <div className="flex flex-wrap gap-2">
-          {SP_OPTIONS.map((sp) => (
+          {options.map((opt) => (
             <button
-              key={sp}
+              key={opt.value}
               type="button"
-              onClick={() => onSelect(sp)}
+              onClick={() => onSelect(opt.value)}
               disabled={isPending}
-              className={`relative flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold transition-all disabled:opacity-50 ${
-                activeSp === sp
+              className={`group/sp relative flex flex-col items-center justify-center rounded-lg px-3 py-2 text-sm font-bold transition-all disabled:opacity-50 ${
+                activeSp === opt.value
                   ? "bg-blue-600 text-white shadow-md dark:bg-blue-500"
                   : "border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-blue-300 hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-blue-700 dark:hover:bg-blue-950/30"
               }`}
             >
-              {sp}
-              {sp === recommendedSp && activeSp !== sp && (
+              <span>{opt.value}</span>
+              {opt.label && (
+                <span className={`mt-0.5 text-[9px] font-normal leading-tight ${
+                  activeSp === opt.value
+                    ? "text-blue-200"
+                    : "text-zinc-400 dark:text-zinc-500"
+                }`}>
+                  {opt.label}
+                </span>
+              )}
+              {opt.value === recommendedSp && activeSp !== opt.value && (
                 <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-blue-400" />
               )}
             </button>
