@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-03-15 (Deployment: Vercel + Turso)
+- **feat(infra):** Добавлен `@prisma/adapter-libsql` и `@libsql/client` для Turso (libSQL) в проде
+- **feat(infra):** Условный выбор адаптера в `src/lib/db.ts`: Turso (prod) / better-sqlite3 (local)
+- **feat(infra):** Build-скрипт: `prisma generate && next build`, postinstall hook
+- **feat(infra):** Развёрнуто на Vercel (Hobby free tier), БД на Turso (Starter free tier)
+- **feat(infra):** Деплой локальной командой `vercel --prod`
+
 ## 2026-03-15 (Landing Page)
 - **feat(landing):** Landing page для неавторизованных пользователей — hero, features, how it works, CTA секции
 - **refactor(home):** Условный рендеринг на `/`: гости видят лендинг, авторизованные — дашборд проектов

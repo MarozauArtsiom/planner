@@ -18,10 +18,12 @@ alwaysApply: true
 
 ## 2. Стратегия Базы Данных (Local to Vercel)
 
-Динамический провайдер в Prisma: БД в файле локально, Vercel Postgres на проде.
+Динамический адаптер в Prisma: SQLite локально, Turso (libSQL) в проде. Переключение по наличию env `TURSO_DATABASE_URL` в `src/lib/db.ts`.
 
-- **Local:** SQLite (файл `dev.db`, работает мгновенно из коробки).
-- **Production:** @vercel/postgres (Serverless SQL).
+- **Local:** SQLite (файл `dev.db`, адаптер `@prisma/adapter-better-sqlite3`).
+- **Production:** Turso (libSQL, SQLite-совместимый), адаптер `@prisma/adapter-libsql`. Хостинг: Vercel (Hobby, free tier). URL проекта: `https://planner-gamma-pied.vercel.app`.
+- **Деплой:** Локальная команда `NODE_TLS_REJECT_UNAUTHORIZED=0 vercel --prod --yes`. Env vars `TURSO_DATABASE_URL` и `TURSO_AUTH_TOKEN` настроены в Vercel.
+- **Схема на Turso:** Накатывается через `turso db shell sprint-planner < schema.sql` (не через `prisma db push`, т.к. Prisma CLI не поддерживает libsql:// URL).
 
 ## 3. Auth Strategy
 
