@@ -20,15 +20,15 @@ function createPrismaClient() {
       url: process.env.TURSO_DATABASE_URL,
       authToken: process.env.TURSO_AUTH_TOKEN,
     });
-    return new PrismaClient({ adapter: new PrismaLibSql(client) });
+    // @ts-expect-error Prisma 7.x internally validates datasourceUrl even with adapter
+    return new PrismaClient({ adapter: new PrismaLibSql(client), datasourceUrl: tursoUrl });
   }
 
+  const dbUrl = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
-  const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-  });
-  return new PrismaClient({ adapter });
+  // @ts-expect-error Prisma 7.x internally validates datasourceUrl even with adapter
+  return new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: dbUrl }), datasourceUrl: dbUrl });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
