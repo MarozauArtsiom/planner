@@ -384,5 +384,29 @@
     "qaOnly": "QA only",
     "status": "Status",
     "days": "d"
+  },
+  "landing": {
+    "badge": "Sprint Planning & Estimation",
+    "headline": "Plan sprints together. Estimate smarter.",
+    "subheadline": "Collaborative task estimation with Dev, QA and BA criteria. Visual Gantt chart for sprint planning. Real-time sync for the whole team.",
+    "getStarted": "Get started",
+    "signIn": "Sign in",
+    "featuresTitle": "Everything you need for sprint planning",
+    "featuresSubtitle": "From estimation to Gantt chart — one tool for the entire team.",
+    "feature1Title": "Collaborative Estimation",
+    "feature1Desc": "4 criteria: Dev Effort, QA Effort, Risk, Uncertainty. Median-based Story Points recommendation. Real-time team voting.",
+    "feature2Title": "Visual Gantt Chart",
+    "feature2Desc": "Drag-and-drop planning. Multi-row parallel tasks. Auto-adjust around time-offs and weekends.",
+    "feature3Title": "Team Sync",
+    "feature3Desc": "Real-time updates for all participants. Multiple Scrum Masters. DEV, QA, BA roles.",
+    "stepsTitle": "Get started in 3 steps",
+    "step1Title": "Create a project",
+    "step1Desc": "Sign up as Scrum Master and create your first project.",
+    "step2Title": "Invite the team",
+    "step2Desc": "Share an invite link. Members choose their role: DEV, QA or BA.",
+    "step3Title": "Estimate and plan",
+    "step3Desc": "Run estimation sessions, build the Gantt chart, export reports.",
+    "ctaTitle": "Ready to plan your next sprint?",
+    "ctaSubtitle": "Free and open. Start planning with your team right now."
   }
 }

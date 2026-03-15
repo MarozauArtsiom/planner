@@ -1,10 +1,10 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { getCurrentUser } from "@/lib/current-user";
 import { createProject } from "@/app/actions/project";
 import { prisma } from "@/lib/db";
 import { UserMenu } from "@/components/user-menu";
+import { LandingPage } from "@/components/landing-page";
 
 async function handleCreateProject(formData: FormData) {
   "use server";
@@ -13,7 +13,10 @@ async function handleCreateProject(formData: FormData) {
 
 export default async function HomePage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+
+  if (!user) {
+    return <LandingPage />;
+  }
 
   const t = await getTranslations("home");
   const tc = await getTranslations("common");

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-03-15 (Landing Page)
+- **feat(landing):** Landing page для неавторизованных пользователей — hero, features, how it works, CTA секции
+- **refactor(home):** Условный рендеринг на `/`: гости видят лендинг, авторизованные — дашборд проектов
+- **feat(landing):** Staggered fade-in анимации, gradient glow, sticky navbar, адаптивная вёрстка
+- **feat(i18n):** Namespace `landing` с 22 ключами переводов во всех 7 языках
+
 ## 2026-03-15 (Разделение глобальных и проектных ролей + роль BA)
 - **refactor(permissions):** `hasSmRights(userId, membership, project)` — глобальный `isScrumMaster` больше не даёт SM-права в проектах, только право создавать проекты
 - **feat(permissions):** Владелец проекта (`project.ownerId`) всегда имеет SM-права, которые нельзя отозвать

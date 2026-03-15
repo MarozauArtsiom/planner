@@ -384,5 +384,29 @@
     "qaOnly": "Solo QA",
     "status": "Estado",
     "days": "d"
+  },
+  "landing": {
+    "badge": "Planificación de sprints y estimación",
+    "headline": "Planifica sprints en equipo. Estima con precisión.",
+    "subheadline": "Estimación colaborativa de tareas con criterios Dev, QA y BA. Diagrama de Gantt visual para planificación de sprints. Sincronización en tiempo real para todo el equipo.",
+    "getStarted": "Comenzar",
+    "signIn": "Iniciar sesión",
+    "featuresTitle": "Todo lo que necesitas para planificar sprints",
+    "featuresSubtitle": "De la estimación al diagrama de Gantt — una herramienta para todo el equipo.",
+    "feature1Title": "Estimación colaborativa",
+    "feature1Desc": "4 criterios: Dev Effort, QA Effort, Risk, Uncertainty. Recomendación de Story Points basada en la mediana. Votación del equipo en tiempo real.",
+    "feature2Title": "Diagrama de Gantt visual",
+    "feature2Desc": "Planificación drag-and-drop. Tareas paralelas en múltiples filas. Ajuste automático con vacaciones y fines de semana.",
+    "feature3Title": "Sincronización del equipo",
+    "feature3Desc": "Actualizaciones en tiempo real para todos los participantes. Múltiples Scrum Masters. Roles DEV, QA, BA.",
+    "stepsTitle": "Empieza en 3 pasos",
+    "step1Title": "Crea un proyecto",
+    "step1Desc": "Regístrate como Scrum Master y crea tu primer proyecto.",
+    "step2Title": "Invita al equipo",
+    "step2Desc": "Comparte un enlace de invitación. Los miembros eligen su rol: DEV, QA o BA.",
+    "step3Title": "Estima y planifica",
+    "step3Desc": "Realiza sesiones de estimación, construye el diagrama de Gantt, exporta informes.",
+    "ctaTitle": "¿Listo para planificar tu próximo sprint?",
+    "ctaSubtitle": "Gratis y abierto. Empieza a planificar con tu equipo ahora mismo."
   }
 }

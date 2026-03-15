@@ -384,5 +384,29 @@
     "qaOnly": "Tylko QA",
     "status": "Status",
     "days": "d"
+  },
+  "landing": {
+    "badge": "Planowanie sprintów i estymacja",
+    "headline": "Planuj sprinty razem. Szacuj trafniej.",
+    "subheadline": "Wspólna estymacja zadań z kryteriami Dev, QA i BA. Wizualny wykres Gantta do planowania sprintów. Synchronizacja w czasie rzeczywistym dla całego zespołu.",
+    "getStarted": "Zacznij",
+    "signIn": "Zaloguj się",
+    "featuresTitle": "Wszystko, czego potrzebujesz do planowania sprintów",
+    "featuresSubtitle": "Od estymacji po wykres Gantta — jedno narzędzie dla całego zespołu.",
+    "feature1Title": "Wspólna estymacja",
+    "feature1Desc": "4 kryteria: Dev Effort, QA Effort, Risk, Uncertainty. Rekomendacja Story Points na podstawie mediany. Głosowanie zespołu w czasie rzeczywistym.",
+    "feature2Title": "Wizualny wykres Gantta",
+    "feature2Desc": "Planowanie drag-and-drop. Równoległe zadania w wielu wierszach. Automatyczne dostosowanie do urlopów i weekendów.",
+    "feature3Title": "Synchronizacja zespołu",
+    "feature3Desc": "Aktualizacje w czasie rzeczywistym dla wszystkich uczestników. Wielu Scrum Masterów. Role DEV, QA, BA.",
+    "stepsTitle": "Zacznij w 3 krokach",
+    "step1Title": "Utwórz projekt",
+    "step1Desc": "Zarejestruj się jako Scrum Master i utwórz pierwszy projekt.",
+    "step2Title": "Zaproś zespół",
+    "step2Desc": "Udostępnij link zaproszeniowy. Członkowie wybierają rolę: DEV, QA lub BA.",
+    "step3Title": "Szacuj i planuj",
+    "step3Desc": "Prowadź sesje estymacji, twórz wykres Gantta, eksportuj raporty.",
+    "ctaTitle": "Gotowy na planowanie kolejnego sprintu?",
+    "ctaSubtitle": "Bezpłatnie i otwarcie. Zacznij planować z zespołem już teraz."
   }
 }
