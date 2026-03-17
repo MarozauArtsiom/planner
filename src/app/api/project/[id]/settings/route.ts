@@ -25,7 +25,6 @@ export async function GET(
     where: { id: projectId },
     select: {
       sprintDurationWeeks: true,
-      sprintStartDay: true,
       sprintNameTemplate: true,
       taskCoefficient: true,
       activeSprintId: true,
@@ -45,7 +44,6 @@ export async function GET(
 
   return NextResponse.json({
     sprintDurationWeeks: project.sprintDurationWeeks,
-    sprintStartDay: project.sprintStartDay,
     sprintNameTemplate: project.sprintNameTemplate,
     taskCoefficient: project.taskCoefficient,
     activeSprintId: project.activeSprintId,

@@ -10,7 +10,7 @@
 - SM создаёт тикеты (ID, название, описание, AC, ссылка на трекер) через боковую панель.
 - SM выбирает тикет для оценки — он мгновенно отображается на экранах всей команды.
 - Кликабельная ссылка на внешний трекер (если задан `externalUrl`), название и Acceptance Criteria.
-- Polling с интервалом 2 секунды обеспечивает автоматическое обновление экранов Dev/QA.
+- Polling с интервалом 5 секунд обеспечивает автоматическое обновление экранов Dev/QA.
 
 ### Story 2.2: Голосование по 4 критериям
 - Mobile-first интерфейс опросника с крупными тач-кнопками.
@@ -55,7 +55,7 @@
 | `src/app/api/estimation/ticket-stats/route.ts` | API статистики любого тикета (не только активного) |
 | `src/app/actions/estimation.ts` | Server actions: createTicket, importTickets, setActiveTicket, submitVote, revealVotes, acceptEstimation, restartVoting, deleteTicket |
 | `src/app/api/estimation/session/route.ts` | GET-эндпоинт для polling (состояние сессии, активный тикет, голоса, результаты) |
-| `src/hooks/use-estimation-polling.ts` | Клиентский хук для polling с интервалом 2 сек |
+| `src/hooks/use-estimation-polling.ts` | Клиентский хук для polling с интервалом 5 сек |
 | `src/app/project/[id]/estimation/page.tsx` | Server-компонент страницы оценки (project-scoped) |
 | `src/components/estimation/estimation-board.tsx` | Главный клиентский компонент (layout, sidebar, состояния) |
 | `src/components/estimation/voting-form.tsx` | Mobile-first форма голосования по 4 критериям |
@@ -70,6 +70,7 @@
 | 2026-03-14 | feat | Mobile-first голосование по 4 критериям (Dev Effort, QA Effort, Risk, Uncertainty) |
 | 2026-03-14 | feat | Калькуляция SP, пропорции Dev/QA, отображение результатов |
 | 2026-03-14 | feat | HTTP polling (2 сек) для real-time обновления экранов |
+| 2026-03-16 | refactor | Интервал polling для estimation увеличен с 2 до 5 секунд |
 | 2026-03-14 | feat | SM workflow: раскрытие результатов, принятие/переголосование |
 | 2026-03-14 | refactor | Estimation перенесена под /project/[id]/estimation, все данные привязаны к projectId |
 | 2026-03-14 | feat | Визуальная индикация оценённых тикетов в списке: зелёный фон, чекмарк, SP-бейдж; кнопка «Переоценить» вместо «Оценить» |

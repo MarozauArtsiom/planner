@@ -183,7 +183,6 @@ export async function updateProjectSettings(
   projectId: string,
   settings: {
     sprintDurationWeeks?: number;
-    sprintStartDay?: number;
     sprintNameTemplate?: string;
     taskCoefficient?: number;
   },
@@ -198,11 +197,6 @@ export async function updateProjectSettings(
   if (settings.sprintDurationWeeks != null) {
     if (settings.sprintDurationWeeks < 1 || settings.sprintDurationWeeks > 4) {
       return { error: t("sprintDurationRange") };
-    }
-  }
-  if (settings.sprintStartDay != null) {
-    if (settings.sprintStartDay < 0 || settings.sprintStartDay > 6) {
-      return { error: t("startDayRange") };
     }
   }
   if (settings.taskCoefficient != null) {
@@ -220,7 +214,6 @@ export async function updateProjectSettings(
     where: { id: projectId },
     data: {
       ...(settings.sprintDurationWeeks != null && { sprintDurationWeeks: settings.sprintDurationWeeks }),
-      ...(settings.sprintStartDay != null && { sprintStartDay: settings.sprintStartDay }),
       ...(settings.sprintNameTemplate != null && { sprintNameTemplate: settings.sprintNameTemplate }),
       ...(settings.taskCoefficient != null && { taskCoefficient: Math.round(settings.taskCoefficient * 100) / 100 }),
     },

@@ -6,7 +6,6 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { hasSmRights } from "@/lib/permissions";
 import {
-  isCorrectStartDay,
   getSprintEndDate,
   getNextSprintStart,
   renderSprintName,
@@ -35,12 +34,11 @@ async function requireProjectSM(projectId: string) {
 
 export async function createSprint(projectId: string, startDateISO?: string) {
   const t = await getTranslations("errors");
-  const td = await getTranslations("dayNames");
   await requireProjectSM(projectId);
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { sprintDurationWeeks: true, sprintStartDay: true, sprintNameTemplate: true },
+    select: { sprintDurationWeeks: true, sprintNameTemplate: true },
   });
   if (!project) return { error: t("projectNotFound") };
 
@@ -57,10 +55,6 @@ export async function createSprint(projectId: string, startDateISO?: string) {
       return { error: t("firstSprintDateRequired") };
     }
     startDate = new Date(startDateISO);
-    if (!isCorrectStartDay(startDate, project.sprintStartDay)) {
-      const dayName = td(String(project.sprintStartDay));
-      return { error: t("sprintMustStartOn", { day: dayName }) };
-    }
   } else {
     const lastSprint = existingSprints[0];
     startDate = getNextSprintStart(lastSprint.endDate);

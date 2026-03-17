@@ -49,7 +49,6 @@ interface SprintItem {
 
 interface ProjectConfig {
   sprintDurationWeeks: number;
-  sprintStartDay: number;
   sprintNameTemplate: string;
   taskCoefficient: number;
   activeSprintId: string | null;
@@ -85,11 +84,8 @@ export default function ProjectSettingsPage() {
 function ProjectSettingsContent() {
   const t = useTranslations("projectSettings");
   const tc = useTranslations("common");
-  const td = useTranslations("dayNames");
   const params = useParams<{ id: string }>();
   const projectId = params.id;
-
-  const dayNames = [td("0"), td("1"), td("2"), td("3"), td("4"), td("5"), td("6")];
 
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -107,7 +103,6 @@ function ProjectSettingsContent() {
   const [membersLoading, setMembersLoading] = useState(true);
 
   const [draftDurationWeeks, setDraftDurationWeeks] = useState(1);
-  const [draftStartDay, setDraftStartDay] = useState(3);
   const [draftNameTemplate, setDraftNameTemplate] = useState("Sprint {number}");
   const [draftCoefficient, setDraftCoefficient] = useState(1.0);
   const [draftActiveSprint, setDraftActiveSprint] = useState<string | null>(null);
@@ -124,7 +119,6 @@ function ProjectSettingsContent() {
       const data: ProjectConfig = await res.json();
       setConfig(data);
       setDraftDurationWeeks(data.sprintDurationWeeks);
-      setDraftStartDay(data.sprintStartDay);
       setDraftNameTemplate(data.sprintNameTemplate);
       setDraftCoefficient(data.taskCoefficient);
       setDraftActiveSprint(data.activeSprintId);
@@ -161,7 +155,6 @@ function ProjectSettingsContent() {
     startTransition(async () => {
       const result = await updateProjectSettings(projectId, {
         sprintDurationWeeks: draftDurationWeeks,
-        sprintStartDay: draftStartDay,
         sprintNameTemplate: draftNameTemplate,
       });
       if (result && "error" in result) {
@@ -357,33 +350,19 @@ function ProjectSettingsContent() {
               <p className={SECTION_DESC_CLASS}>{t("sprintDesc")}</p>
 
               <div className="space-y-4">
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label className={LABEL_CLASS}>{t("duration")}</label>
-                    <select
-                      value={draftDurationWeeks}
-                      onChange={(e) => setDraftDurationWeeks(parseInt(e.target.value))}
-                      className={`mt-1 ${SELECT_CLASS} w-full`}
-                    >
-                      {[1, 2, 3, 4].map((w) => (
-                        <option key={w} value={w}>
-                          {w} {weekLabel(w)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <label className={LABEL_CLASS}>{t("startDay")}</label>
-                    <select
-                      value={draftStartDay}
-                      onChange={(e) => setDraftStartDay(parseInt(e.target.value))}
-                      className={`mt-1 ${SELECT_CLASS} w-full`}
-                    >
-                      {dayNames.map((name, i) => (
-                        <option key={i} value={i}>{name}</option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className={LABEL_CLASS}>{t("duration")}</label>
+                  <select
+                    value={draftDurationWeeks}
+                    onChange={(e) => setDraftDurationWeeks(parseInt(e.target.value))}
+                    className={`mt-1 ${SELECT_CLASS} w-full`}
+                  >
+                    {[1, 2, 3, 4].map((w) => (
+                      <option key={w} value={w}>
+                        {w} {weekLabel(w)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

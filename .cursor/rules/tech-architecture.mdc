@@ -37,14 +37,14 @@ alwaysApply: true
 Serverless-функции на Vercel не держат долгие WebSocket-соединения — используем HTTP Polling.
 
 - **Решение:** SWR или React Query.
-- **Как это работает:** Браузеры «Зрителей» раз в 1-2 секунды дергают легковесный GET-эндпоинт `/api/estimation/session?projectId=X`. Скрам-мастер отправляет POST (Server Action), мутирует базу, и при следующем поллинге через секунду все участники видят новую картину. Этого достаточно для ощущения real-time.
+- **Как это работает:** Браузеры «Зрителей» раз в 5 секунд дергают легковесный GET-эндпоинт `/api/estimation/session?projectId=X`. Скрам-мастер отправляет POST (Server Action), мутирует базу, и при следующем поллинге участники видят новую картину.
 
 ## 5. Архитектура Базы Данных (Prisma Schema)
 
 ### Ключевые модели
 
 - **User** — login/passwordHash для авторизации. Поле `role` deprecated — роль теперь per-project. Любой пользователь может создавать проекты.
-- **Project** — корневая сущность. `ownerId` — SM, создавший проект. Настройки спринта (`sprintDurationWeeks`, `sprintStartDay`, `sprintNameTemplate`), `taskCoefficient`, `activeSprintId` (FK на Sprint).
+- **Project** — корневая сущность. `ownerId` — SM, создавший проект. Настройки спринта (`sprintDurationWeeks`, `sprintNameTemplate`), `taskCoefficient`, `activeSprintId` (FK на Sprint). Поле `sprintStartDay` deprecated — спринт стартует в любой день.
 - **SpScaleItem** — настраиваемая шкала SP per-project. `value` (число SP), `label` (описание для команды), `durationDays` (рабочие дни на Ганте). Unique `[projectId, value]`. Дефолтная шкала сидится при создании проекта.
 - **ProjectMember** — связь User ↔ Project. Unique constraint `[userId, projectId]`. Per-project роль `role` (`"DEV" | "QA" | "BA" | null`). Per-project SM-флаг `isScrumMaster: Boolean`.
 - **InviteLink** — invite-ссылка для проекта. Уникальный `token`, флаг `grantsSm` (даёт SM-права при присоединении), опциональный `label`. Несколько ссылок на проект.

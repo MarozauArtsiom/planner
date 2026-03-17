@@ -77,15 +77,14 @@ export function SprintCreateDialog({ projectId, onCreated, onCancel }: Props) {
                 {weekdays.map((h: string) => <div key={h} className="py-1 font-medium text-zinc-400">{h}</div>)}
                 {Array.from({ length: offset }).map((_, i) => <div key={`empty-${i}`} />)}
                 {days.map((day) => {
-                  const wed = getDay(day) === 3;
                   const past = isBefore(startOfDay(day), startOfDay(new Date()));
                   const weekend = getDay(day) === 0 || getDay(day) === 6;
                   return (
                     <button
                       key={day.toISOString()}
-                      disabled={!wed || isPending}
+                      disabled={isPending}
                       onClick={() => handleSelect(day)}
-                      className={`rounded py-1.5 text-xs transition-colors ${wed ? past ? "bg-amber-50 font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-950/50" : "bg-blue-50 font-semibold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-950/50" : weekend ? "text-zinc-300 dark:text-zinc-600" : "text-zinc-500 dark:text-zinc-400"} ${!wed ? "cursor-default" : "cursor-pointer"}`}
+                      className={`cursor-pointer rounded py-1.5 text-xs transition-colors ${past ? "bg-amber-50 font-medium text-amber-700 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:hover:bg-amber-950/50" : weekend ? "text-zinc-500 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:bg-zinc-800" : "bg-blue-50 font-semibold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-950/50"}`}
                     >
                       {format(day, "d")}
                     </button>

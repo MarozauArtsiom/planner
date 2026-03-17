@@ -36,7 +36,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
   const t = useTranslations("estimation");
   const tp = useTranslations("project");
   const tc = useTranslations("common");
-  const { state, refresh } = useEstimationPolling(projectId, 2000);
+  const { state, refresh } = useEstimationPolling(projectId, 5000);
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isPending, startTransition] = useTransition();

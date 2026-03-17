@@ -75,7 +75,7 @@ export interface SessionState {
   };
 }
 
-export function useEstimationPolling(projectId: string, intervalMs = 2000) {
+export function useEstimationPolling(projectId: string, intervalMs = 5000) {
   const [state, setState] = useState<SessionState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);

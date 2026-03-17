@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-03-16 (Estimation polling interval)
+- **refactor(estimation):** Интервал polling в estimation увеличен с 2 до 5 секунд (`use-estimation-polling` и `estimation-board`)
+- **chore(docs):** Обновлена документация по estimation/архитектуре: polling = 5 секунд
+
+## 2026-03-16 (Спринт стартует в любой день)
+- **fix(sprint):** Убрана валидация `isCorrectStartDay` — первый спринт может стартовать в любой день недели
+- **fix(calendar):** Мини-календарь первого спринта показывает все дни как кликабельные (убран хардкод среды)
+- **refactor(settings):** Удалён селектор `sprintStartDay` из настроек проекта — поле больше не используется
+- **refactor(date-utils):** Удалены `isWednesday`, `isCorrectStartDay`, константа `WEDNESDAY`
+- **refactor(i18n):** Удалены ключи `sprintMustStartOn`, `startDay`, `startDayRange`; обновлены `selectStartDate`, `calendarHint` во всех 7 языках
+
 ## 2026-03-15 (Удаление глобальной роли SM)
 - **refactor(schema):** Удалено поле `User.isScrumMaster` — SM-права теперь только per-project (`ProjectMember.isScrumMaster` + `project.ownerId`)
 - **refactor(auth):** Упрощена регистрация — только имя + пароль, без чекбокса SM

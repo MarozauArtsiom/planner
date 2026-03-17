@@ -2,22 +2,11 @@ import {
   addDays,
   isSameDay,
   isWeekend as dateFnsIsWeekend,
-  getDay,
   startOfDay,
   eachDayOfInterval,
   format,
   formatISO,
 } from "date-fns";
-
-const WEDNESDAY = 3;
-
-export function isWednesday(date: Date): boolean {
-  return getDay(date) === WEDNESDAY;
-}
-
-export function isCorrectStartDay(date: Date, dayOfWeek: number): boolean {
-  return getDay(date) === dayOfWeek;
-}
 
 export function getSprintEndDate(startDate: Date, durationWeeks: number = 1): Date {
   const totalDays = durationWeeks * 7 - 1;
