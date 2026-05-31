@@ -47,10 +47,14 @@ interface SprintItem {
   endDate: string;
 }
 
+type EstimationMethod = "COMPOSITE_SP" | "FIBONACCI_SP" | "HOURS" | "DAYS";
+
 interface ProjectConfig {
   sprintDurationWeeks: number;
   sprintNameTemplate: string;
   taskCoefficient: number;
+  estimationMethod: EstimationMethod;
+  workingHoursPerDay: number;
   activeSprintId: string | null;
   spScale: SpScaleItem[];
   sprints: SprintItem[];
@@ -107,6 +111,8 @@ function ProjectSettingsContent() {
   const [draftCoefficient, setDraftCoefficient] = useState(1.0);
   const [draftActiveSprint, setDraftActiveSprint] = useState<string | null>(null);
   const [draftScale, setDraftScale] = useState<SpScaleItem[]>([]);
+  const [draftMethod, setDraftMethod] = useState<EstimationMethod>("COMPOSITE_SP");
+  const [draftWorkingHours, setDraftWorkingHours] = useState(8);
 
   const showSuccess = (msg: string) => {
     setSuccess(msg);
@@ -123,6 +129,8 @@ function ProjectSettingsContent() {
       setDraftCoefficient(data.taskCoefficient);
       setDraftActiveSprint(data.activeSprintId);
       setDraftScale(data.spScale);
+      setDraftMethod(data.estimationMethod);
+      setDraftWorkingHours(data.workingHoursPerDay);
     }
     setConfigLoading(false);
   }, [projectId]);
@@ -175,6 +183,21 @@ function ProjectSettingsContent() {
         setError(result.error ?? tc("error"));
       } else {
         showSuccess(t("coefficientSaved"));
+      }
+    });
+  };
+
+  const handleSaveEstimationMethod = () => {
+    startTransition(async () => {
+      const result = await updateProjectSettings(projectId, {
+        estimationMethod: draftMethod,
+        ...(draftMethod === "HOURS" && { workingHoursPerDay: draftWorkingHours }),
+      });
+      if (result && "error" in result) {
+        setError(result.error ?? tc("error"));
+      } else {
+        showSuccess(t("estimationMethodSaved"));
+        loadConfig();
       }
     });
   };
@@ -418,6 +441,70 @@ function ProjectSettingsContent() {
                   ))}
                 </select>
               )}
+            </div>
+
+            <div className={SECTION_CLASS}>
+              <h2 className={SECTION_TITLE_CLASS}>{t("estimationMethod")}</h2>
+              <p className={SECTION_DESC_CLASS}>{t("estimationMethodDesc")}</p>
+
+              <div className="space-y-3">
+                {(["COMPOSITE_SP", "FIBONACCI_SP", "HOURS", "DAYS"] as const).map((m) => {
+                  const isActive = draftMethod === m;
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setDraftMethod(m)}
+                      disabled={isPending}
+                      className={`block w-full rounded-lg border px-4 py-3 text-left transition-all disabled:opacity-50 ${
+                        isActive
+                          ? "border-blue-400 bg-blue-50 dark:border-blue-600 dark:bg-blue-950/40"
+                          : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm font-semibold ${isActive ? "text-blue-700 dark:text-blue-300" : "text-zinc-900 dark:text-zinc-100"}`}>
+                          {t(`methodLabel_${m}`)}
+                        </span>
+                        {isActive && (
+                          <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white dark:bg-blue-500">
+                            {t("methodActive")}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                        {t(`methodDesc_${m}`)}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {draftMethod === "HOURS" && (
+                <div className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+                  <label className={LABEL_CLASS}>{t("workingHoursPerDay")}</label>
+                  <p className="mb-2 text-xs text-zinc-400">{t("workingHoursPerDayDesc")}</p>
+                  <input
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={draftWorkingHours}
+                    onChange={(e) => setDraftWorkingHours(Math.max(1, Math.min(24, parseInt(e.target.value) || 8)))}
+                    className={INPUT_CLASS}
+                  />
+                </div>
+              )}
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSaveEstimationMethod}
+                  disabled={isPending}
+                  className={BTN_PRIMARY_CLASS}
+                >
+                  {isPending ? "..." : tc("save")}
+                </button>
+              </div>
             </div>
 
             <div className={SECTION_CLASS}>

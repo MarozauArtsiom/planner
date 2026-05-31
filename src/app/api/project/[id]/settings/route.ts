@@ -27,6 +27,8 @@ export async function GET(
       sprintDurationWeeks: true,
       sprintNameTemplate: true,
       taskCoefficient: true,
+      estimationMethod: true,
+      workingHoursPerDay: true,
       activeSprintId: true,
       spScaleItems: {
         orderBy: { value: "asc" },
@@ -46,6 +48,8 @@ export async function GET(
     sprintDurationWeeks: project.sprintDurationWeeks,
     sprintNameTemplate: project.sprintNameTemplate,
     taskCoefficient: project.taskCoefficient,
+    estimationMethod: project.estimationMethod,
+    workingHoursPerDay: project.workingHoursPerDay,
     activeSprintId: project.activeSprintId,
     spScale: project.spScaleItems,
     sprints: project.sprints.map((s) => ({

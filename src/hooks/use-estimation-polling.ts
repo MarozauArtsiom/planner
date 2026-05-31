@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { EstimationMethod } from "@/lib/estimation-engine";
 
 export interface SessionTicket {
   id: string;
@@ -25,17 +26,24 @@ export interface VoteProgress {
   currentUserVoted: boolean;
 }
 
+/**
+ * Голос участника в любом методе.
+ * - COMPOSITE_SP: заполнены 4 поля, singleValue=null
+ * - FIBONACCI_SP / HOURS / DAYS: заполнено singleValue, остальные null
+ */
 export interface IndividualVote {
   oderId: string;
   name: string;
-  devEffort: number;
-  qaEffort: number;
-  risk: number;
-  uncertainty: number;
+  devEffort: number | null;
+  qaEffort: number | null;
+  risk: number | null;
+  uncertainty: number | null;
+  singleValue: number | null;
   totalScore: number;
 }
 
-export interface EstimationResults {
+export interface CompositeEstimationResults {
+  method: "COMPOSITE_SP";
   avgDevEffort: number;
   avgQaEffort: number;
   avgRisk: number;
@@ -45,6 +53,19 @@ export interface EstimationResults {
   devProportion: number;
   voteCount: number;
 }
+
+export interface SimpleEstimationResults {
+  method: "FIBONACCI_SP" | "HOURS" | "DAYS";
+  medianValue: number;
+  roundedValue: number;
+  minValue: number;
+  maxValue: number;
+  recommendedSp: number;
+  durationDays: number;
+  voteCount: number;
+}
+
+export type EstimationResults = CompositeEstimationResults | SimpleEstimationResults;
 
 export interface VoterStatus {
   oderId: string;
@@ -57,6 +78,19 @@ export interface SpScaleOption {
   label: string;
 }
 
+export interface EstimationConfig {
+  method: EstimationMethod;
+  workingHoursPerDay: number;
+  shape: number[];
+  /** Показывать ли гистограмму распределения всем участникам (по умолчанию false — только SM/host). */
+  showDistributionToAll: boolean;
+}
+
+export interface QuickRoomInfo {
+  accessCode: string | null;
+  isHost: boolean;
+}
+
 export interface SessionState {
   sessionId: string | null;
   status: "IDLE" | "VOTING" | "REVEALED";
@@ -67,6 +101,9 @@ export interface SessionState {
   voterStatus: VoterStatus[] | null;
   tickets: TicketListItem[];
   spScale: SpScaleOption[];
+  estimationConfig: EstimationConfig;
+  /** Если проект — Quick-комната, тут код и флаг хоста. Иначе null. */
+  quickRoom: QuickRoomInfo | null;
   currentUser: {
     id: string;
     name: string;

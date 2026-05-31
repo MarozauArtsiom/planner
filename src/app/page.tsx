@@ -38,9 +38,17 @@ export default async function HomePage() {
     <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
       <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            {tc("appName")}
-          </h1>
+          <div className="flex items-center gap-6">
+            <h1 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+              {tc("appName")}
+            </h1>
+            <Link
+              href="/poker"
+              className="rounded-md bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60"
+            >
+              {tc("planningPokerNav")}
+            </Link>
+          </div>
 
           <UserMenu userName={user.name} />
         </div>

@@ -1,27 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { EstimationResults } from "@/hooks/use-estimation-polling";
 
-const SP_LABELS: Record<number, string> = {
-  1: "1-2 дня",
-  2: "Полспринта",
-  3: "~1 неделя",
-  5: "Крупная задача",
-};
-
 const CRITERIA_META = [
-  { key: "avgDevEffort" as const, label: "Dev Effort", color: "bg-indigo-500" },
-  {
-    key: "avgQaEffort" as const,
-    label: "QA Effort",
-    color: "bg-emerald-500",
-  },
-  { key: "avgRisk" as const, label: "Risk", color: "bg-amber-500" },
-  {
-    key: "avgUncertainty" as const,
-    label: "Uncertainty",
-    color: "bg-violet-500",
-  },
+  { key: "avgDevEffort" as const, label: "Dev Effort", color: "bg-indigo-500", max: 6 },
+  { key: "avgQaEffort" as const, label: "QA Effort", color: "bg-emerald-500", max: 4 },
+  { key: "avgRisk" as const, label: "Risk", color: "bg-amber-500", max: 2 },
+  { key: "avgUncertainty" as const, label: "Uncertainty", color: "bg-violet-500", max: 2 },
 ];
 
 function CriterionBar({
@@ -40,9 +26,7 @@ function CriterionBar({
     <div>
       <div className="mb-1 flex items-center justify-between text-sm">
         <span className="text-zinc-600 dark:text-zinc-400">{label}</span>
-        <span className="font-semibold text-zinc-900 dark:text-zinc-100">
-          {value}
-        </span>
+        <span className="font-semibold text-zinc-900 dark:text-zinc-100">{value}</span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
         <div
@@ -54,38 +38,54 @@ function CriterionBar({
   );
 }
 
-export function VotingResults({ results }: { results: EstimationResults }) {
+export function VotingResults({
+  results,
+  workingHoursPerDay = 8,
+}: {
+  results: EstimationResults;
+  workingHoursPerDay?: number;
+}) {
+  if (results.method === "COMPOSITE_SP") {
+    return <CompositeResults results={results} />;
+  }
+  return <SimpleResults results={results} workingHoursPerDay={workingHoursPerDay} />;
+}
+
+// =====================================================================
+// COMPOSITE_SP
+// =====================================================================
+
+function CompositeResults({
+  results,
+}: {
+  results: Extract<EstimationResults, { method: "COMPOSITE_SP" }>;
+}) {
+  const t = useTranslations("votingResults");
   const devPct = Math.round(results.devProportion * 100);
   const qaPct = 100 - devPct;
+
+  const voteCountLabel = t("votesCount", { count: results.voteCount });
 
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">
-            Рекомендация
+            {t("recommendation")}
           </h3>
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
-            {results.voteCount}{" "}
-            {results.voteCount === 1 ? "голос" : results.voteCount < 5 ? "голоса" : "голосов"}
-          </span>
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">{voteCountLabel}</span>
         </div>
 
         <div className="flex items-end gap-4">
           <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-600 dark:bg-blue-500">
-            <span className="text-3xl font-bold text-white">
-              {results.recommendedSp}
-            </span>
+            <span className="text-3xl font-bold text-white">{results.recommendedSp}</span>
           </div>
           <div>
             <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
               {results.recommendedSp} SP
             </p>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              {SP_LABELS[results.recommendedSp] ?? `${results.recommendedSp}+ SP`}
-            </p>
             <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-              Общий балл: {results.totalScore}
+              {t("totalScore", { score: results.totalScore })}
             </p>
           </div>
         </div>
@@ -93,7 +93,7 @@ export function VotingResults({ results }: { results: EstimationResults }) {
 
       <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
         <h3 className="mb-4 text-sm font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">
-          Пропорция Dev / QA
+          {t("devQaProportion")}
         </h3>
 
         <div className="mb-2 flex h-5 overflow-hidden rounded-full">
@@ -125,7 +125,7 @@ export function VotingResults({ results }: { results: EstimationResults }) {
 
       <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
         <h3 className="mb-4 text-sm font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">
-          Медианные баллы
+          {t("medianScores")}
         </h3>
 
         <div className="space-y-3">
@@ -134,10 +134,96 @@ export function VotingResults({ results }: { results: EstimationResults }) {
               key={c.key}
               label={c.label}
               value={results[c.key]}
-              max={c.key === "avgDevEffort" ? 6 : c.key === "avgQaEffort" ? 4 : 2}
+              max={c.max}
               color={c.color}
             />
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// FIBONACCI_SP / HOURS / DAYS
+// =====================================================================
+
+function formatValue(value: number, method: "FIBONACCI_SP" | "HOURS" | "DAYS"): string {
+  if (method === "HOURS") return `${value}h`;
+  if (method === "DAYS") return `${value}d`;
+  return `${value} SP`;
+}
+
+function SimpleResults({
+  results,
+  workingHoursPerDay,
+}: {
+  results: Extract<EstimationResults, { method: "FIBONACCI_SP" | "HOURS" | "DAYS" }>;
+  workingHoursPerDay: number;
+}) {
+  const t = useTranslations("votingResults");
+  const voteCountLabel = t("votesCount", { count: results.voteCount });
+  const rounded = formatValue(results.roundedValue, results.method);
+  const median = formatValue(results.medianValue, results.method);
+
+  const recommendationHint =
+    results.method === "HOURS"
+      ? t("hoursDaysHint", {
+          days: Math.max(
+            1,
+            Math.ceil(results.roundedValue / Math.max(1, workingHoursPerDay)),
+          ),
+        })
+      : results.method === "DAYS"
+        ? t("daysHint")
+        : t("fibonacciHint");
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">
+            {t("recommendation")}
+          </h3>
+          <span className="text-xs text-zinc-400 dark:text-zinc-500">{voteCountLabel}</span>
+        </div>
+
+        <div className="flex items-end gap-4">
+          <div className="flex h-20 w-24 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-600 dark:bg-blue-500">
+            <span className="text-2xl font-bold text-white">{rounded}</span>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              {t("medianValue", { value: median })}
+            </p>
+            <p className="text-xs text-zinc-400 dark:text-zinc-500">{recommendationHint}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+        <h3 className="mb-4 text-sm font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">
+          {t("voteSpread")}
+        </h3>
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">{t("min")}</p>
+            <p className="mt-1 text-lg font-bold text-zinc-900 dark:text-zinc-100">
+              {formatValue(results.minValue, results.method)}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">{t("median")}</p>
+            <p className="mt-1 text-lg font-bold text-blue-600 dark:text-blue-400">
+              {median}
+            </p>
+          </div>
+          <div>
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">{t("max")}</p>
+            <p className="mt-1 text-lg font-bold text-zinc-900 dark:text-zinc-100">
+              {formatValue(results.maxValue, results.method)}
+            </p>
+          </div>
         </div>
       </div>
     </div>

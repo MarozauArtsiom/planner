@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { hasSmRights } from "@/lib/permissions";
 import { DEFAULT_SP_SCALE, type SpScaleEntry } from "@/lib/sp-scale";
+import { isEstimationMethod } from "@/lib/estimation-engine";
 import { recalcFutureSprints } from "@/app/actions/sprint";
 
 const VALID_ROLES = ["DEV", "QA", "BA"] as const;
@@ -185,6 +186,8 @@ export async function updateProjectSettings(
     sprintDurationWeeks?: number;
     sprintNameTemplate?: string;
     taskCoefficient?: number;
+    estimationMethod?: string;
+    workingHoursPerDay?: number;
   },
 ) {
   const t = await getTranslations("errors");
@@ -204,6 +207,14 @@ export async function updateProjectSettings(
       return { error: t("coefficientRange") };
     }
   }
+  if (settings.estimationMethod != null && !isEstimationMethod(settings.estimationMethod)) {
+    return { error: t("invalidEstimationMethod") };
+  }
+  if (settings.workingHoursPerDay != null) {
+    if (settings.workingHoursPerDay < 1 || settings.workingHoursPerDay > 24) {
+      return { error: t("workingHoursRange") };
+    }
+  }
 
   const oldProject = await prisma.project.findUnique({
     where: { id: projectId },
@@ -216,6 +227,8 @@ export async function updateProjectSettings(
       ...(settings.sprintDurationWeeks != null && { sprintDurationWeeks: settings.sprintDurationWeeks }),
       ...(settings.sprintNameTemplate != null && { sprintNameTemplate: settings.sprintNameTemplate }),
       ...(settings.taskCoefficient != null && { taskCoefficient: Math.round(settings.taskCoefficient * 100) / 100 }),
+      ...(settings.estimationMethod != null && { estimationMethod: settings.estimationMethod }),
+      ...(settings.workingHoursPerDay != null && { workingHoursPerDay: settings.workingHoursPerDay }),
     },
   });
 

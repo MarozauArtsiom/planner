@@ -8,12 +8,14 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  passwordHash  String
-  name          String   @unique
+  id            String    @id @default(cuid())
+  passwordHash  String?
+  name          String
   role          String?  // "DEV" | "QA" | "BA" | null (pure SM)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isGuest       Boolean   @default(false)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   votes            Vote[]
   ticketAssignments TicketAssignment[]
@@ -23,14 +25,25 @@ model User {
 }
 
 model Project {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+
+  // Quick-комнаты для planning poker без обвязки
+  isQuick    Boolean   @default(false)
+  accessCode String?   @unique
+  expiresAt  DateTime?
 
   sprintDurationWeeks Int    @default(1)
   sprintStartDay      Int    @default(3) // 0=Sun, 1=Mon, ..., 6=Sat
   sprintNameTemplate  String @default("Sprint {number}")
   taskCoefficient     Float  @default(1.0)
+
+  // Эстимация: COMPOSITE_SP (4-факторная), FIBONACCI_SP, HOURS, DAYS
+  estimationMethod      String  @default("COMPOSITE_SP")
+  workingHoursPerDay    Int     @default(8)
+  // Показывать гистограмму распределения всем (по умолчанию — только SM/host)
+  showDistributionToAll Boolean @default(false)
 
   ownerId String
   owner   User   @relation("OwnedProjects", fields: [ownerId], references: [id])
@@ -127,10 +140,13 @@ model EstimationSession {
 
 model Vote {
   id          String   @id @default(cuid())
-  devEffort   Int
-  qaEffort    Int
-  risk        Int
-  uncertainty Int
+  // 4-факторный голос (COMPOSITE_SP) — все поля заполнены вместе
+  devEffort   Int?
+  qaEffort    Int?
+  risk        Int?
+  uncertainty Int?
+  // Простой single-value голос (FIBONACCI_SP / HOURS / DAYS)
+  singleValue Float?
   createdAt   DateTime @default(now())
 
   userId   String

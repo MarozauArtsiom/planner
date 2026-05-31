@@ -400,14 +400,15 @@ async function main() {
   const passwordHash = await hashPassword("1234");
 
   console.log("Seeding users...");
+  // User.name больше не unique (после введения guest-юзеров), используем findFirst+create
   const createdUsers = await Promise.all(
-    userNames.map((name) =>
-      prisma.user.upsert({
-        where: { name },
-        update: {},
-        create: { name, passwordHash },
-      })
-    )
+    userNames.map(async (name) => {
+      const existing = await prisma.user.findFirst({
+        where: { name, isGuest: false },
+      });
+      if (existing) return existing;
+      return prisma.user.create({ data: { name, passwordHash } });
+    }),
   );
 
   const ownerUser = createdUsers.find((u) => u.name === "dev-sm-1")!;

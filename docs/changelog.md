@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-05-31 (Видимость гистограммы: только SM/host по дефолту + тогл «показать всем»)
+- **feat(schema):** Project.showDistributionToAll: Boolean @default(false) — флаг видимости гистограммы голосов для не-админов
+- **feat(actions):** `setShowDistribution(projectId, show)` в `estimation.ts` — доступен SM/host (через `requireProjectSM`, которая для Quick-комнат проверяет owner)
+- **feat(api):** `estimationConfig.showDistributionToAll` в response `/api/estimation/session` и `/api/estimation/ticket-stats`
+- **feat(ui):** `VoteDistributionChart` теперь принимает опциональный `headerSlot` — место для контролов в шапке (используется для чекбокса)
+- **feat(ui):** В `VoteDetails` chart рендерится при `isSM || showDistributionToAll`. Чекбокс «Показать график всем» в шапке chart виден только SM/host, optimistic update + polling-синхронизация для остальных
+- **feat(i18n):** Ключ `showToAll` в 7 языках
+
+## 2026-05-31 (Гистограмма распределения голосов)
+- **feat(estimation):** Новый компонент `VoteDistributionChart` — SVG-гистограмма распределения голосов с подсветкой медианы (синий), рекомендации (янтарь) и выбросов через IQR (красная рамка). Hover на колонке показывает имена проголосовавших. Без сторонних библиотек графиков
+- **feat(estimation):** `VoteDetails` разделён на `CompositeView` (chart по totalScore + 4-факторная таблица) и `SimpleView` (chart по singleValue + одноколоночная таблица с единицами `h`/`d`/SP). Для simple-методов раньше была только min/median/max — теперь полное распределение
+- **feat(estimation):** Chart показывается при ≥ 3 голосах (раньше — никогда для simple, всегда таблица для composite)
+- **feat(i18n):** Ключи `distributionTitle`, `voteCount`, `legendMedian`, `legendRecommended`, `legendOutlier`, `vote` в 7 языках
+
+## 2026-05-31 (Quick Rooms: смена метода во время сессии с real-time апдейтом)
+- **feat(quick-room):** `changeQuickRoomMethod` теперь корректно работает во время активного раунда — голоса в старом методе очищаются в транзакции, сессия возвращается в `VOTING`, текущий тикет остаётся. Команда переголосовывает в новом методе
+- **feat(ui):** Toast «Метод изменён на X. Текущий раунд переголосуется.» для всех участников (показывается на 3.5 секунды через сравнение `prevMethodRef` в `useEffect`)
+- **fix(ui):** `<VotingForm key={method} ... />` в `quick-room-board.tsx` и `estimation-board.tsx` — React пересоздаёт компонент при смене метода, локальный `selected` state сбрасывается. Иначе форма могла показать невалидное значение из старой шкалы
+- **feat(i18n):** Ключ `methodChangedToast` в 7 языках
+
+## 2026-05-29 (Эпик 10, итерация 2: Quick Rooms — быстрый planning poker без проектов)
+- **feat(schema):** `Project.isQuick`/`accessCode`(unique)/`expiresAt` для Quick-комнат. `User.passwordHash` сделан nullable, добавлены `User.isGuest` и `User.expiresAt`. `User.name` больше не unique — теперь несколько гостей могут иметь одно имя; register/login переключены на `findFirst({name, isGuest: false})`
+- **feat(quick-room):** `src/lib/quick-room.ts` — генератор кода `XKZ-294` (алфавит без 0/O/1/I), TTL = 24ч, lazy-проверка истечения, нормализация ника
+- **feat(actions):** `createQuickRoom` (создаёт Project с isQuick=true + хост-юзер, если не залогинен — создаём guest); `joinQuickRoomAsGuest(code, nickname)` (по ссылке вводит ник); `startNextRound(code)` (Ticket с title="Раунд N", делает активным); `changeQuickRoomMethod(code, method)` (хост меняет метод эстимации в комнате)
+- **feat(api/voting):** `submitVote` и `requireProjectSM` в Quick-комнатах не требуют DEV/QA/BA-роли — любой member голосует; SM-логика заменена проверкой `project.ownerId === userId`. API `/api/estimation/session` возвращает `quickRoom: { accessCode, isHost }` для Quick-проектов
+- **feat(pages):** `/poker` — публичный landing с CTA «Создать комнату» (ник + метод + кнопка), плюс поле «Присоединиться по коду». `/poker/[code]` — серверный резолв accessCode → 404/expired/join-form/board
+- **feat(quick-room-board):** упрощённая комната — хедер с кодом + копировать ссылку + ник + бейдж Хост, переключатель метода (только хост), states: IDLE (хост запускает первый раунд) / VOTING (форма голосования + прогресс) / REVEALED (медиана + рекомендация + таблица голосов + «Следующий раунд» / «Переголосовать»)
+- **feat(navigation):** Вкладка «Planning Poker» в хедере главной страницы (для авторизованных) и в навигации landing-страницы + рядом с «Sign In» в hero
+- **feat(proxy):** `/poker` и `/poker/[code]` публично доступны без auth (для гостей)
+- **feat(i18n):** ~40 новых ключей в 7 языках — новый namespace `quickRoom`, ключи в `common` (close, backToApp, planningPokerNav), `landing` (quickPokerNav), `errors` (guestNicknameRequired, quickRoomNotFound, onlyHostCanStartRound и т.д.)
+- **chore(migration):** `20260528212850_add_quick_rooms`
+- **chore(seed):** seed.ts переключён на findFirst+create для users (после удаления @unique с name)
+
+## 2026-05-26 (Эпик 10, итерация 1: мульти-методная эстимация)
+- **feat(schema):** `Project.estimationMethod` (`COMPOSITE_SP` | `FIBONACCI_SP` | `HOURS` | `DAYS`), `Project.workingHoursPerDay` (дефолт 8). Поля `Vote.devEffort/qaEffort/risk/uncertainty` сделаны nullable, добавлено `Vote.singleValue` для single-value методов
+- **feat(engine):** `calculateSimpleEstimation()` — медиана + round-up к sane-шкале (HOURS: 1,2,4,8,16,24,40; DAYS: 0.5,1,2,3,5,8,13; FIBONACCI: 1,2,3,5,8,13,21). Конвертация в SP через проектную шкалу по длительности в днях. SP-эквивалент сохраняется в `Ticket.storyPoints` — Гант и отчёты работают без изменений
+- **feat(estimation):** `submitVote` и `acceptEstimation` ветвятся по методу проекта. Валидация значений из соответствующей шкалы
+- **feat(api):** `/api/estimation/session` и `/api/estimation/ticket-stats` возвращают `estimationConfig: { method, workingHoursPerDay, shape }`. Структура `results` варьируется по методу (`{ method, ... }`-discriminated union)
+- **feat(voting-form):** Обёртка с ветвлением — `VotingFormComposite` (4-факторный, без изменений) и `VotingFormSimple` (одна линейка карточек). Для HOURS-голоса показывается approximate-конвертация в дни
+- **feat(voting-results):** Для FIBONACCI_SP/HOURS/DAYS блок «Рекомендация» = round-up значение, hint про конвертацию (для HOURS — в дни), блок «Разброс голосов» (min/median/max). Для COMPOSITE_SP — без изменений. Строки переведены через i18n namespace `votingResults`
+- **feat(vote-details):** Поддержка единого голоса (`singleValue`) — упрощённая таблица с одной колонкой для simple-методов
+- **feat(settings):** Новая секция «Метод эстимации» — 4 карточки с описаниями, при HOURS показывается поле `workingHoursPerDay` (1-24)
+- **feat(i18n):** ~30 новых ключей в 7 языках (ru, en, pl, es, be, uk, hi) — `projectSettings.estimationMethod*`, `votingForm.simple*`, новый namespace `votingResults`, `voteDetails.voteColumn`, `errors.invalidEstimationMethod`/`workingHoursRange`
+- **chore(migration):** `20260526180821_add_estimation_method`
+
 ## 2026-03-16 (Estimation polling interval)
 - **refactor(estimation):** Интервал polling в estimation увеличен с 2 до 5 секунд (`use-estimation-polling` и `estimation-board`)
 - **chore(docs):** Обновлена документация по estimation/архитектуре: polling = 5 секунд

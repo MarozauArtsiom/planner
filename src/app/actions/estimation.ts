@@ -5,7 +5,13 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { hasSmRights } from "@/lib/permissions";
-import { calculateEstimation } from "@/lib/estimation-engine";
+import {
+  calculateEstimation,
+  calculateSimpleEstimation,
+  getShapeForMethod,
+  isEstimationMethod,
+  type EstimationMethod,
+} from "@/lib/estimation-engine";
 
 async function requireUser() {
   const userId = await getSession();
@@ -28,7 +34,15 @@ async function requireProjectMember(projectId: string) {
 async function requireProjectSM(projectId: string) {
   const t = await getTranslations("errors");
   const { user, membership } = await requireProjectMember(projectId);
-  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { ownerId: true } });
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { ownerId: true, isQuick: true },
+  });
+  // В Quick-комнате SM-логика заменяется на проверку owner — только хост управляет
+  if (project?.isQuick) {
+    if (project.ownerId !== user.id) throw new Error(t("onlyHostAction"));
+    return user;
+  }
   if (!hasSmRights(user.id, membership, project))
     throw new Error(t("onlySmAction"));
   return user;
@@ -86,10 +100,26 @@ const VALID_QA_EFFORT = [1, 2, 4];
 const VALID_RISK = [0, 1, 2];
 const VALID_UNCERTAINTY = [0, 1, 2];
 
+async function getProjectMethod(projectId: string): Promise<EstimationMethod> {
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { estimationMethod: true },
+  });
+  return isEstimationMethod(project?.estimationMethod)
+    ? project.estimationMethod
+    : "COMPOSITE_SP";
+}
+
 export async function submitVote(projectId: string, formData: FormData) {
   const t = await getTranslations("errors");
   const { user, membership } = await requireProjectMember(projectId);
-  if (!membership.role) {
+  // В обычных проектах голосуют только участники с ролью DEV/QA/BA;
+  // в Quick-комнатах любой member может голосовать (роли не используются).
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { isQuick: true },
+  });
+  if (!project?.isQuick && !membership.role) {
     return { error: t("onlyTeamCanVote") };
   }
 
@@ -98,24 +128,69 @@ export async function submitVote(projectId: string, formData: FormData) {
     return { error: t("votingNotActive") };
   }
 
-  const devEffort = parseInt(formData.get("devEffort") as string);
-  const qaEffort = parseInt(formData.get("qaEffort") as string);
-  const risk = parseInt(formData.get("risk") as string);
-  const uncertainty = parseInt(formData.get("uncertainty") as string);
+  const method = await getProjectMethod(projectId);
 
-  if (
-    !VALID_DEV_EFFORT.includes(devEffort) ||
-    !VALID_QA_EFFORT.includes(qaEffort) ||
-    !VALID_RISK.includes(risk) ||
-    !VALID_UNCERTAINTY.includes(uncertainty)
-  ) {
+  if (method === "COMPOSITE_SP") {
+    const devEffort = parseInt(formData.get("devEffort") as string);
+    const qaEffort = parseInt(formData.get("qaEffort") as string);
+    const risk = parseInt(formData.get("risk") as string);
+    const uncertainty = parseInt(formData.get("uncertainty") as string);
+
+    if (
+      !VALID_DEV_EFFORT.includes(devEffort) ||
+      !VALID_QA_EFFORT.includes(qaEffort) ||
+      !VALID_RISK.includes(risk) ||
+      !VALID_UNCERTAINTY.includes(uncertainty)
+    ) {
+      return { error: t("invalidCriteriaValues") };
+    }
+
+    await prisma.vote.upsert({
+      where: { userId_ticketId: { userId: user.id, ticketId: session.activeTicketId } },
+      create: {
+        userId: user.id,
+        ticketId: session.activeTicketId,
+        devEffort,
+        qaEffort,
+        risk,
+        uncertainty,
+        singleValue: null,
+      },
+      update: { devEffort, qaEffort, risk, uncertainty, singleValue: null },
+    });
+
+    return { success: true };
+  }
+
+  // Single-value методы: FIBONACCI_SP / HOURS / DAYS
+  const raw = formData.get("singleValue") as string | null;
+  const singleValue = raw != null ? parseFloat(raw) : NaN;
+  if (!Number.isFinite(singleValue) || singleValue <= 0) {
+    return { error: t("invalidCriteriaValues") };
+  }
+  const shape = getShapeForMethod(method);
+  if (shape.length > 0 && !shape.includes(singleValue)) {
     return { error: t("invalidCriteriaValues") };
   }
 
   await prisma.vote.upsert({
     where: { userId_ticketId: { userId: user.id, ticketId: session.activeTicketId } },
-    create: { userId: user.id, ticketId: session.activeTicketId, devEffort, qaEffort, risk, uncertainty },
-    update: { devEffort, qaEffort, risk, uncertainty },
+    create: {
+      userId: user.id,
+      ticketId: session.activeTicketId,
+      devEffort: null,
+      qaEffort: null,
+      risk: null,
+      uncertainty: null,
+      singleValue,
+    },
+    update: {
+      devEffort: null,
+      qaEffort: null,
+      risk: null,
+      uncertainty: null,
+      singleValue,
+    },
   });
 
   return { success: true };
@@ -147,21 +222,68 @@ export async function acceptEstimation(projectId: string, overrideSp?: number) {
     return { error: t("nothingToAccept") };
   }
 
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { estimationMethod: true, workingHoursPerDay: true },
+  });
+  const method: EstimationMethod = isEstimationMethod(project?.estimationMethod)
+    ? project.estimationMethod
+    : "COMPOSITE_SP";
+  const workingHoursPerDay = project?.workingHoursPerDay ?? 8;
+
   const votes = await prisma.vote.findMany({
     where: { ticketId: session.activeTicketId },
   });
 
   const spScaleItems = await prisma.spScaleItem.findMany({
     where: { projectId },
-    select: { value: true },
+    select: { value: true, label: true, durationDays: true },
   });
-  const spValues = spScaleItems.map((s) => s.value);
-  const result = calculateEstimation(votes, spValues.length > 0 ? spValues : undefined);
-  const sp = overrideSp && overrideSp > 0 ? overrideSp : result.recommendedSp;
+
+  let sp: number;
+  let devProportion: number | null = null;
+
+  if (method === "COMPOSITE_SP") {
+    const compositeVotes = votes
+      .filter(
+        (v) =>
+          v.devEffort != null &&
+          v.qaEffort != null &&
+          v.risk != null &&
+          v.uncertainty != null,
+      )
+      .map((v) => ({
+        devEffort: v.devEffort as number,
+        qaEffort: v.qaEffort as number,
+        risk: v.risk as number,
+        uncertainty: v.uncertainty as number,
+      }));
+    const spValues = spScaleItems.map((s) => s.value);
+    const result = calculateEstimation(
+      compositeVotes,
+      spValues.length > 0 ? spValues : undefined,
+    );
+    sp = overrideSp && overrideSp > 0 ? overrideSp : result.recommendedSp;
+    devProportion = result.devProportion;
+  } else {
+    const simpleVotes = votes
+      .filter((v) => v.singleValue != null)
+      .map((v) => ({ value: v.singleValue as number }));
+    const result = calculateSimpleEstimation(
+      simpleVotes,
+      method,
+      spScaleItems,
+      workingHoursPerDay,
+    );
+    sp = overrideSp && overrideSp > 0 ? overrideSp : result.recommendedSp;
+  }
 
   await prisma.ticket.update({
     where: { id: session.activeTicketId },
-    data: { storyPoints: sp, devEffortProportion: result.devProportion },
+    data: {
+      storyPoints: sp,
+      ...(devProportion != null && { devEffortProportion: devProportion }),
+    },
   });
 
   await prisma.estimationSession.update({
@@ -219,6 +341,16 @@ export async function importTickets(projectId: string, tickets: TicketImportInpu
   });
 
   return { success: true, count: valid.length };
+}
+
+/** Тоггл «Показывать гистограмму распределения всем участникам». Доступно SM/host. */
+export async function setShowDistribution(projectId: string, show: boolean) {
+  await requireProjectSM(projectId);
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { showDistributionToAll: show },
+  });
+  return { success: true };
 }
 
 export async function deleteTicket(projectId: string, ticketId: string) {

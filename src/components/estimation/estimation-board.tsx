@@ -12,6 +12,7 @@ import {
   type IndividualVote,
   type VoterStatus,
   type SpScaleOption,
+  type EstimationConfig,
 } from "@/hooks/use-estimation-polling";
 import { VotingForm } from "./voting-form";
 import { VotingResults } from "./voting-results";
@@ -46,6 +47,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
     ticket: { id: string; title: string; externalId: string | null; storyPoints: number | null };
     results: EstimationResults | null;
     individualVotes: IndividualVote[];
+    estimationConfig: { method: EstimationConfig["method"]; workingHoursPerDay: number };
   } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsSp, setStatsSp] = useState<number | null>(null);
@@ -250,7 +252,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                   {state.status === "VOTING" && state.activeTicket && (
                     <>
                       <TicketInfo ticket={state.activeTicket} />
-                      {canVote && !state.votes.currentUserVoted && <div className={isSM ? "mb-6" : ""}><VotingForm projectId={projectId} onSuccess={refresh} /></div>}
+                      {canVote && !state.votes.currentUserVoted && <div className={isSM ? "mb-6" : ""}><VotingForm key={state.estimationConfig.method} projectId={projectId} config={state.estimationConfig} onSuccess={refresh} /></div>}
                       {canVote && state.votes.currentUserVoted && !isSM && <WaitingForTeam votes={state.votes} />}
                       {isSM && <SMVotingPanel votes={state.votes} voterStatus={state.voterStatus} onReveal={() => act(() => revealVotes(projectId))} isPending={isPending} />}
                     </>
@@ -258,8 +260,8 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                   {state.status === "REVEALED" && state.activeTicket && state.results && (
                     <>
                       <TicketInfo ticket={state.activeTicket} />
-                      <VotingResults results={state.results} />
-                      {state.individualVotes && state.individualVotes.length > 0 && <div className="mt-5"><VoteDetails votes={state.individualVotes} results={state.results} isSM={isSM} /></div>}
+                      <VotingResults results={state.results} workingHoursPerDay={state.estimationConfig.workingHoursPerDay} />
+                      {state.individualVotes && state.individualVotes.length > 0 && <div className="mt-5"><VoteDetails votes={state.individualVotes} results={state.results} isSM={isSM} estimationConfig={state.estimationConfig} projectId={projectId} onRefresh={refresh} /></div>}
                       {isSM && <SpAcceptPanel recommendedSp={state.results.recommendedSp} selectedSp={selectedSp} onSelect={setSelectedSp} onAccept={(sp) => act(() => acceptEstimation(projectId, sp))} onRestart={() => act(() => restartVoting(projectId))} isPending={isPending} spScale={state.spScale} />}
                     </>
                   )}
@@ -283,8 +285,8 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                       </div>
                       {ticketStats.results && (
                         <>
-                          <VotingResults results={ticketStats.results} />
-                          {ticketStats.individualVotes.length > 0 && <VoteDetails votes={ticketStats.individualVotes} results={ticketStats.results} isSM={isSM} />}
+                          <VotingResults results={ticketStats.results} workingHoursPerDay={ticketStats.estimationConfig.workingHoursPerDay} />
+                          {ticketStats.individualVotes.length > 0 && <VoteDetails votes={ticketStats.individualVotes} results={ticketStats.results} isSM={isSM} estimationConfig={state.estimationConfig} projectId={projectId} onRefresh={refresh} />}
                         </>
                       )}
                       {!ticketStats.results && ticketStats.individualVotes.length === 0 && <p className="py-8 text-center text-sm text-zinc-400">{t("noVotes")}</p>}

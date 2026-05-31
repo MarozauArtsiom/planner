@@ -70,6 +70,12 @@ export function LandingPage() {
           </div>
           <div className="flex items-center gap-3">
             <Link
+              href="/poker"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/40"
+            >
+              {t("quickPokerNav")}
+            </Link>
+            <Link
               href="/login"
               className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >

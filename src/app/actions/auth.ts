@@ -18,7 +18,9 @@ export async function register(formData: FormData) {
     return { error: t("passwordMin4") };
 
   try {
-    const existing = await prisma.user.findUnique({ where: { name } });
+    const existing = await prisma.user.findFirst({
+      where: { name, isGuest: false },
+    });
     if (existing) return { error: t("nickTaken") };
 
     const passwordHash = await hashPassword(password);
@@ -45,8 +47,10 @@ export async function login(formData: FormData) {
     return { error: t("enterCredentials") };
 
   try {
-    const user = await prisma.user.findUnique({ where: { name } });
-    if (!user) return { error: t("invalidCredentials") };
+    const user = await prisma.user.findFirst({
+      where: { name, isGuest: false },
+    });
+    if (!user || !user.passwordHash) return { error: t("invalidCredentials") };
 
     const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) return { error: t("invalidCredentials") };
