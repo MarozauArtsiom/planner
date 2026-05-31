@@ -7,7 +7,12 @@ export const revalidate = 0;
 
 /**
  * Vercel Cron endpoint для очистки истёкших Quick-комнат и гостевых юзеров.
- * Расписание: каждый час (см. `vercel.json`).
+ * Расписание: раз в сутки в 03:00 UTC (см. `vercel.json`).
+ *
+ * Hobby tier Vercel разрешает максимум один cron-run в сутки. Это OK —
+ * lazy-cleanup в `findActiveQuickRoom` уже не даёт пользователю увидеть
+ * expired комнату при первом чтении. Cron нужен только чтобы добивать
+ * orphan-записи (комнаты без visit'ов после истечения) — раз в сутки достаточно.
  *
  * Защита: Vercel автоматически добавляет `Authorization: Bearer <CRON_SECRET>`
  * в крон-запросы, если переменная окружения задана. На dev — пропускаем check.
