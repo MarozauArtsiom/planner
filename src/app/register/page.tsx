@@ -5,8 +5,15 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { register } from "@/app/actions/auth";
-import { Footer } from "@/components/footer";
 import { MIN_AGE } from "@/lib/legal";
+import {
+  PageShell,
+  Card,
+  Field,
+  Input,
+  Button,
+  Checkbox,
+} from "@/components/ui";
 
 type ActionState = { error?: string } | undefined;
 
@@ -36,111 +43,121 @@ function RegisterForm() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
+    <PageShell variant="public">
       <div className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              {tc("appName")}
-            </h1>
-            <p className="mt-2 text-zinc-500 dark:text-zinc-400">
+        <div className="w-full max-w-sm space-y-8">
+          <header className="text-center">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2.5 text-zinc-900 transition-opacity hover:opacity-80 dark:text-zinc-50"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-md dark:from-blue-400 dark:to-blue-600">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09Z"
+                  />
+                </svg>
+              </span>
+              <span className="text-xl font-bold tracking-tight">
+                {tc("appName")}
+              </span>
+            </Link>
+            <h1 className="mt-6 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
               {t("createAccount")}
-            </p>
-          </div>
+            </h1>
+          </header>
 
-          <form action={formAction} className="space-y-5">
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-              >
-                {t("nickname")}
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                autoFocus
-                autoComplete="username"
-                placeholder={t("nicknamePlaceholder")}
-                className="mt-1 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus:border-blue-400"
-              />
-            </div>
+          <Card variant="default">
+            <form action={formAction} className="space-y-5">
+              <Field label={t("nickname")} emphasis="strong" htmlFor="name">
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  autoFocus
+                  autoComplete="username"
+                  placeholder={t("nicknamePlaceholder")}
+                  size="lg"
+                />
+              </Field>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-              >
-                {t("password")}
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="new-password"
-                className="mt-1 block w-full rounded-lg border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder-zinc-500 dark:focus:border-blue-400"
-              />
-            </div>
+              <Field label={t("password")} emphasis="strong" htmlFor="password">
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  autoComplete="new-password"
+                  size="lg"
+                />
+              </Field>
 
-            <label className="flex cursor-pointer items-start gap-2 select-none">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
                 required
-                className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 dark:border-zinc-600"
+                align="top"
+                label={
+                  <>
+                    {tl("registerAgreement", { age: MIN_AGE })}{" "}
+                    <Link
+                      href="/terms"
+                      target="_blank"
+                      className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      {tl("terms")}
+                    </Link>{" "}
+                    {tl("and")}{" "}
+                    <Link
+                      href="/privacy"
+                      target="_blank"
+                      className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      {tl("privacy")}
+                    </Link>
+                    .
+                  </>
+                }
               />
-              <span className="text-xs text-zinc-600 dark:text-zinc-400">
-                {tl("registerAgreement", { age: MIN_AGE })}{" "}
-                <Link
-                  href="/terms"
-                  target="_blank"
-                  className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  {tl("terms")}
-                </Link>{" "}
-                {tl("and")}{" "}
-                <Link
-                  href="/privacy"
-                  target="_blank"
-                  className="text-blue-600 underline hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  {tl("privacy")}
-                </Link>
-                .
-              </span>
-            </label>
 
-            {state?.error && (
-              <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-950/50 dark:text-red-400">
-                {state.error}
-              </p>
-            )}
+              {state?.error && (
+                <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-950/50 dark:text-red-400">
+                  {state.error}
+                </p>
+              )}
 
-            <button
-              type="submit"
-              disabled={isPending || !agreed}
-              className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              {isPending ? t("registerPending") : t("registerButton")}
-            </button>
-          </form>
+              <Button
+                type="submit"
+                disabled={isPending || !agreed}
+                variant="primary"
+                size="lg"
+                block
+              >
+                {isPending ? t("registerPending") : t("registerButton")}
+              </Button>
+            </form>
+          </Card>
 
           <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
             {t("hasAccount")}{" "}
             <Link
               href={`/login${redirectTo !== "/" ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`}
-              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
             >
               {t("loginButton")}
             </Link>
           </p>
         </div>
       </div>
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

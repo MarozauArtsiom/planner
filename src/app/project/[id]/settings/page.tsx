@@ -15,6 +15,7 @@ import {
   resetSpScale,
 } from "@/app/actions/project";
 import { renderSprintName } from "@/lib/date-utils";
+import { PageShell } from "@/components/ui";
 
 interface ProjectMemberItem {
   userId: string;
@@ -336,8 +337,8 @@ function ProjectSettingsContent() {
   };
 
   return (
-    <div className="flex min-h-screen items-start justify-center bg-zinc-50 px-4 py-12 dark:bg-zinc-950">
-      <div className="w-full max-w-lg space-y-8">
+    <PageShell variant="app">
+      <div className="mx-auto w-full max-w-lg space-y-8 px-4 py-10 md:py-12">
         <div>
           <Link
             href={`/project/${projectId}`}
@@ -348,7 +349,7 @@ function ProjectSettingsContent() {
             </svg>
             {t("backToProject")}
           </Link>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="mt-4 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             {t("title")}
           </h1>
         </div>
@@ -698,6 +699,6 @@ function ProjectSettingsContent() {
           )}
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }

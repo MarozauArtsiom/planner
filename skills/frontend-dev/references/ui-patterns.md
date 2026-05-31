@@ -1,6 +1,42 @@
 # UI Patterns — Reusable Snippets
 
-Compiled from existing components. Match these styles when adding new UI.
+> **As of 2026-06 (Epic 11, Phase 1)** — there is now a `src/components/ui/` library of shared primitives. **Prefer them over hand-rolled markup.** Snippets in this file are the **fallback / source-of-truth styling** that the components encode; use the raw snippets only when the components don't cover your use case.
+
+## Use the primitives first
+
+```tsx
+import {
+  Button, IconButton,
+  Card, SectionHeader,
+  Badge,
+  Field, Input, Textarea, Checkbox,
+  PageShell, PageHeader,
+  Spinner, LoadingScreen,
+} from "@/components/ui";
+```
+
+| Need | Component |
+|---|---|
+| Submit / primary action | `<Button variant="primary">` |
+| Cancel / alt action | `<Button variant="secondary">` |
+| Subtle inline action | `<Button variant="ghost">` |
+| Delete / kick / leave | `<Button variant="danger">` |
+| Icon-only action with tooltip | `<IconButton label="…">{svg}</IconButton>` |
+| Container with border + padding | `<Card>` (variants: `default`, `compact`, `flush`, `accent`) |
+| Uppercase tracked title inside Card | `<SectionHeader>` |
+| Status pill / role tag | `<Badge tone="info\|success\|warning\|danger\|accent\|role-dev\|role-qa\|role-ba">` |
+| Labelled input | `<Field label="…" error={…}><Input ... /></Field>` |
+| Consent / agree checkbox | `<Checkbox label={…} required />` |
+| Full-page layout with optional Footer | `<PageShell variant="public\|app" header={…}>` |
+| Page header (sticky-friendly) | `<PageHeader leading={…} title={…} trailing={…} />` |
+| Inline spinner | `<Spinner size="sm\|md\|lg" />` |
+| Full-screen loading | `<LoadingScreen label={t("loading")} />` |
+
+When the primitive doesn't cover the shape you need (e.g. very custom card layouts, drag-handles), fall through to the raw snippets below — but the colour and border tokens still apply.
+
+---
+
+## Raw snippets (fallback / source of truth)
 
 ## Page Shell (public page with Footer)
 

@@ -24,7 +24,9 @@
     "registerPending": "Registrando...",
     "noAccount": "¿No tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?",
-    "logoutButton": "Cerrar sesión"
+    "logoutButton": "Cerrar sesión",
+    "guestUpgradeTitle": "Era una sesión de invitado de Quick Poker",
+    "guestUpgradeDesc": "Para crear proyectos, planificar sprints y usar Gantt — regístrate gratis."
   },
   "userMenu": {
     "settings": "Configuración",
@@ -45,6 +47,8 @@
     "memberCount1": "miembro",
     "memberCount234": "miembros",
     "memberCount5plus": "miembros",
+    "noProjectsTitleNew": "Crea tu primer proyecto",
+    "ownerBadgeShort": "Propietario",
     "estimation": "Estimación",
     "estimationSession": "Sesión de estimación",
     "projectSettings": "Configuración del proyecto"
@@ -552,7 +556,9 @@
     "revote": "Volver a votar",
     "roundTitle": "Ronda {number}",
     "waitingForPlayers": "Esperando a más jugadores",
-    "roomExpired": "Esta sala Quick ha caducado (TTL — 24 horas)"
+    "roomExpired": "Esta sala Quick ha caducado (TTL — 24 horas)",
+    "guestHintTitle": "¿Quieres más? Sprints, Gantt, informes — en la app completa.",
+    "guestHintAction": "Crear cuenta gratis"
   },
   "legal": {
     "registerAgreement": "Tengo {age}+ y he leído y acepto",

@@ -23,6 +23,17 @@ async function requireUser() {
   return user;
 }
 
+/** Жёсткий guard для действий, требующих полноценный аккаунт.
+ *  Гости (Quick Poker) сюда не должны попадать — UI и proxy уже блокируют,
+ *  это последняя линия защиты на случай прямого вызова action. */
+async function requireFullUser() {
+  const user = await requireUser();
+  if (user.isGuest) {
+    redirect("/login?guestUpgrade=1");
+  }
+  return user;
+}
+
 async function requireProjectSM(projectId: string) {
   const t = await getTranslations("errors");
   const user = await requireUser();
@@ -38,7 +49,7 @@ async function requireProjectSM(projectId: string) {
 
 export async function createProject(formData: FormData) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
+  const user = await requireFullUser();
 
   const name = (formData.get("name") as string)?.trim();
   if (!name) return { error: t("projectNameRequired") };
@@ -63,7 +74,7 @@ export async function createProject(formData: FormData) {
 
 export async function joinProject(inviteToken: string, role: string | null) {
   const t = await getTranslations("errors");
-  const user = await requireUser();
+  const user = await requireFullUser();
 
   const link = await prisma.inviteLink.findUnique({
     where: { token: inviteToken },

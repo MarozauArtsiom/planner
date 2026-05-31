@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // GSD Core install artifacts — third-party (open-gsd/gsd-core), not our codebase
+    ".claude/**",
+    // GSD planning artifacts (local-only, see .gitignore)
+    ".planning/**",
+    // Generated Prisma client
+    "src/generated/**",
   ]),
 ]);
 

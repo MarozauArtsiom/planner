@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { MIN_AGE } from "@/lib/legal";
+import { Field, Input, Button, Badge } from "@/components/ui";
 
 type MethodOption = "FIBONACCI_SP" | "HOURS" | "DAYS" | "COMPOSITE_SP";
 
@@ -51,47 +52,61 @@ export function PokerLandingForm({ currentUser, createAction }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Шаг 1: ник хоста, если не залогинен */}
-      {!currentUser && (
-        <div>
-          <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-            {t("yourNickname")}
-          </label>
-          <input
+      {/* Шаг 1: ник хоста (или индикатор существующего входа) */}
+      {!currentUser ? (
+        <Field
+          label={t("yourNickname")}
+          hint={t("nicknameHint")}
+          htmlFor="host-nickname"
+        >
+          <Input
+            id="host-nickname"
             type="text"
             value={hostNickname}
             onChange={(e) => setHostNickname(e.target.value)}
             placeholder={t("nicknamePlaceholder")}
             maxLength={32}
-            className="mt-1 block w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 focus:border-blue-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            size="md"
           />
-          <p className="mt-1.5 text-[11px] text-zinc-400 dark:text-zinc-500">
-            {t("nicknameHint")}
-          </p>
-        </div>
-      )}
-
-      {currentUser && (
-        <div className="rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
-          {t("loggedInAs", { name: currentUser.name })}
+        </Field>
+      ) : (
+        <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 dark:bg-blue-950/40">
+          <svg
+            className="h-4 w-4 flex-shrink-0 text-blue-600 dark:text-blue-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+            />
+          </svg>
+          <span className="text-xs text-blue-700 dark:text-blue-300">
+            {t("loggedInAs", { name: currentUser.name })}
+          </span>
         </div>
       )}
 
       {/* Шаг 2: метод */}
       <div>
-        <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        <p className="mb-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
           {t("votingMethod")}
-        </label>
-        <div className="mt-1.5 grid grid-cols-2 gap-2">
-          {(["FIBONACCI_SP", "HOURS", "DAYS", "COMPOSITE_SP"] as const).map((m) => (
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {(
+            ["FIBONACCI_SP", "HOURS", "DAYS", "COMPOSITE_SP"] as const
+          ).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMethod(m)}
               className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
                 method === m
-                  ? "border-blue-400 bg-blue-50 text-blue-700 dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
-                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600"
+                  ? "border-blue-400 bg-blue-50 text-blue-700 shadow-sm dark:border-blue-600 dark:bg-blue-950/40 dark:text-blue-300"
+                  : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600"
               }`}
             >
               {t(`methodShort_${m}`)}
@@ -106,22 +121,45 @@ export function PokerLandingForm({ currentUser, createAction }: Props) {
         </p>
       )}
 
-      <button
+      <Button
         type="button"
         onClick={handleCreate}
         disabled={isPending}
-        className="w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+        variant="primary"
+        size="md"
+        block
       >
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"
+          />
+        </svg>
         {isPending ? t("creating") : t("createRoomButton")}
-      </button>
+      </Button>
 
       <p className="text-center text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
         {t("agreementInline", { age: MIN_AGE })}{" "}
-        <Link href="/terms" target="_blank" className="underline hover:text-zinc-600 dark:hover:text-zinc-300">
+        <Link
+          href="/terms"
+          target="_blank"
+          className="underline hover:text-zinc-600 dark:hover:text-zinc-300"
+        >
           Terms
         </Link>{" "}
         ·{" "}
-        <Link href="/privacy" target="_blank" className="underline hover:text-zinc-600 dark:hover:text-zinc-300">
+        <Link
+          href="/privacy"
+          target="_blank"
+          className="underline hover:text-zinc-600 dark:hover:text-zinc-300"
+        >
           Privacy
         </Link>
       </p>
@@ -131,18 +169,18 @@ export function PokerLandingForm({ currentUser, createAction }: Props) {
           <div className="w-full border-t border-zinc-200 dark:border-zinc-800" />
         </div>
         <div className="relative flex justify-center">
-          <span className="bg-white px-2 text-[11px] text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500">
+          <Badge tone="neutral" size="xs" className="bg-white dark:bg-zinc-900">
             {t("or")}
-          </span>
+          </Badge>
         </div>
       </div>
 
       <div>
-        <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        <p className="mb-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">
           {t("joinByCode")}
-        </label>
-        <div className="mt-1.5 flex gap-2">
-          <input
+        </p>
+        <div className="flex gap-2">
+          <Input
             type="text"
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
@@ -151,16 +189,18 @@ export function PokerLandingForm({ currentUser, createAction }: Props) {
             }}
             placeholder="XKZ-294"
             maxLength={7}
-            className="block flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-mono uppercase tracking-wider text-zinc-900 focus:border-blue-400 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            size="md"
+            className="flex-1 font-mono uppercase tracking-wider"
           />
-          <button
+          <Button
             type="button"
             onClick={handleJoin}
             disabled={!joinCode.trim()}
-            className="rounded-md border border-zinc-200 bg-white px-4 py-2 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            variant="secondary"
+            size="md"
           >
             {t("join")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

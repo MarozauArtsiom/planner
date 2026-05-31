@@ -24,7 +24,9 @@
     "registerPending": "Рэгістрацыя...",
     "noAccount": "Няма акаўнта?",
     "hasAccount": "Ужо ёсць акаўнт?",
-    "logoutButton": "Выйсці з акаўнта"
+    "logoutButton": "Выйсці з акаўнта",
+    "guestUpgradeTitle": "Гэта была гасцявая сесія Quick Poker",
+    "guestUpgradeDesc": "Каб ствараць праекты, планаваць спрынты і карыстацца Гант-чартам — зарэгіструйцеся."
   },
   "userMenu": {
     "settings": "Налады",
@@ -45,6 +47,8 @@
     "memberCount1": "удзельнік",
     "memberCount234": "удзельнікі",
     "memberCount5plus": "удзельнікаў",
+    "noProjectsTitleNew": "Стварыце першы праект",
+    "ownerBadgeShort": "Уладальнік",
     "estimation": "Ацэнка",
     "estimationSession": "Сесія ацэнкі",
     "projectSettings": "Налады праекта"
@@ -552,7 +556,9 @@
     "revote": "Перагаласаваць",
     "roundTitle": "Раўнд {number}",
     "waitingForPlayers": "Чакаем астатніх гульцоў",
-    "roomExpired": "Гэты Quick-пакой скончыўся (TTL — 24 гадзіны)"
+    "roomExpired": "Гэты Quick-пакой скончыўся (TTL — 24 гадзіны)",
+    "guestHintTitle": "Хочаце большага? Спрынты, Гант, справаздачы — у поўным дадатку.",
+    "guestHintAction": "Стварыць бясплатны акаўнт"
   },
   "legal": {
     "registerAgreement": "Мне {age}+, я прачытаў і згаджаюся з",

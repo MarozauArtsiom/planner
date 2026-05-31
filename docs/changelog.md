@@ -1,5 +1,143 @@
 # Changelog
 
+## 2026-06-01 (Logout кнопка для guest + redirect → /)
+
+Гостевой юзер теперь может выйти и увидеть главную страницу (landing).
+
+- **fix(auth):** `logout()` action редиректит на `/` вместо `/login`. Гость после выхода видит landing (т.к. без session он не идентифицирован как guest); registered после logout тоже сначала видит landing — там есть Sign In в navbar для возврата
+- **feat(poker):** На `/poker` landing page внизу — кнопка «Sign out» если есть активная сессия. Для unauthenticated пользователей сохраняется старый «← Back to app» link
+- Раньше: гость был «застрял» в Quick Poker без способа выйти, кроме как через DevTools / clear cookies. Сейчас: один клик «Sign out» → видит landing
+
+## 2026-06-01 (Guest/User segregation — жёсткое разделение доступа)
+
+Гостевые юзеры (созданные через Quick Poker) теперь **не могут попасть** ни в одну страницу кроме Quick-комнат и legal/auth. Полные функции (проекты, спринты, Гант, settings) — только для зарегистрированных через `/register`.
+
+### Защита в три уровня
+
+- **Cookie `userType`** в `src/lib/session.ts`: `"user"` для registered, `"guest"` для Quick-юзеров. `setSession(userId, userType?)` — второй параметр опциональный, дефолт `"user"`. httpOnly + Secure (prod) + SameSite=Lax. Клиент не может его подменить
+- **Middleware `src/proxy.ts`**: если `userType === "guest"`, разрешены ТОЛЬКО `/poker/*`, `/terms`, `/privacy`, `/cookies`, `/login`, `/register`. Остальное → редирект на `/login?guestUpgrade=1`. Edge-friendly (без БД-запросов)
+- **Action guards `src/app/actions/project.ts`**: новая функция `requireFullUser()` блокирует `isGuest=true` пользователей в `createProject` и `joinProject`. Defense-in-depth — даже если middleware обойдут, action откажет
+
+### UX
+
+- **`/login?guestUpgrade=1`** → info-banner «Это была гостевая сессия. Чтобы создавать проекты, планировать спринты и пользоваться Гант-чартом — зарегистрируйтесь.»
+- **Quick Room board** для guest-юзера показывает внизу маленький блок «Need more? Sprint planning, Gantt, reports — in the full app. → Create a free account». Для зарегистрированных в Quick-комнате (например, тестируют) hint не показывается
+- **Главная (`/`)**: если guest зашёл — редирект на `/poker` (его «home»)
+- **Login page**: useSearchParams читает `?guestUpgrade=1` и показывает banner до формы
+
+### API
+
+- `/api/estimation/session` response теперь включает `currentUser.isGuest: boolean`
+- Hook `useEstimationPolling` тип `SessionState.currentUser.isGuest: boolean`
+
+### Что было раньше (баг)
+
+До этих изменений: гость с cookie мог физически набрать `/project/[id]` или `/settings` — middleware пропускал (cookie был), он попадал на страницу, которая делала Prisma-query → либо 404 (нет membership), либо ошибка. UX был сломан. Теперь — единое поведение: гость **не видит** этих страниц.
+
+### i18n
+
+Добавлено в 7 языках:
+- `auth.guestUpgradeTitle` / `auth.guestUpgradeDesc`
+- `quickRoom.guestHintTitle` / `quickRoom.guestHintAction`
+
+### Build
+
+✓ Compiled successfully
+
+## 2026-06-01 (Epic 11 Phase 5 — Polish + Audit • эпик 11 закрыт)
+
+Финальная фаза: error pages → `<PageShell>`, eslint hygiene, cross-page audit, закрытие милестоуна.
+
+- **feat(errors):** `src/app/not-found.tsx` и `src/app/error.tsx` переписаны на `<PageShell variant="public">` + `<Button>` (для error reset). Hero number (404/500) получил `select-none tracking-tight`, hover-states получили focus ring, ARIA-label на error digest. Это были последние страницы с ручным `<Footer />`
+- **chore(eslint):** Добавлен ignore для `.claude/**` (GSD install artifacts), `.planning/**` (planning artifacts, gitignored), `src/generated/**` (Prisma client). Никаких новых eslint-ошибок от Phase 1-5 не введено. Pre-existing 7 errors (`set-state-in-effect` в `gantt-header.tsx`, `use-estimation-notification.ts`) + 13 unused-vars warnings (csv-parser, report) сохранены **как есть** — pre-existing, вне scope визуального редизайна
+- **audit(footer):** Поиск `from "@/components/footer"` теперь возвращает **только `src/components/ui/page-shell.tsx`** — Footer стал внутренней деталью PageShell, нельзя случайно забыть на public page
+- **audit(ui-primitives):** 16 файлов в `src/app/` используют `@/components/ui` — полное покрытие дизайн-системой
+- **audit(gantt):** Намеренно не тронут (см. Phase 4 changelog), причина задокументирована
+- **chore(epic):** `docs/features/epic-11-visual-redesign.md` обновлён до финального статуса
+
+### Эпик 11 — итоги
+
+**Phase 1** заложил shared UI primitives (`Button`, `IconButton`, `Card`+`SectionHeader`, `Badge`, `Field`+`Input`+`Textarea`+`Checkbox`, `PageShell`+`PageHeader`, `Spinner`+`LoadingScreen`).
+
+**Phase 2** переделал главную (`/`) — landing для гостей и dashboard для авторизованных. Refined visual rhythm, animate-ping live badge, gradient icon-containers, hover-lift cards.
+
+**Phase 3** унифицировал public entry pages: `/login`, `/register`, `/poker` landing+form, `/poker/[code]` join-form, `/invite/[token]`, chrome для `/terms`+`/privacy`+`/cookies`. Footer ушёл в PageShell автоматически.
+
+**Phase 4** привёл app pages к единому ритму: `/settings`, `/project/[id]/settings`, `/poker/[code]` board, `/project/[id]/estimation`. LoadingScreen унифицирован. Gantt board намеренно не тронут (h-screen layout).
+
+**Phase 5** закрыл error pages и провёл cross-page audit — Footer теперь только в PageShell, eslint ignored для third-party (.claude, .planning, generated/), 16/16 pages используют ui-primitives.
+
+**Изменено файлов:** 22 (8 новых ui-primitives + 14 переписанных страниц/компонентов)  
+**НЕ изменено:** Server Actions, Prisma schema, API routes, polling hooks, business logic, user journey, тексты (кроме 2 новых ключей в Phase 2: `noProjectsTitleNew`, `ownerBadgeShort`). Gantt (`project-content.tsx`) сохранён как есть.
+
+**Build:** ✓ Compiled successfully  
+**Lint:** только pre-existing errors/warnings (set-state-in-effect и unused-vars из других эпиков)
+
+## 2026-06-01 (Epic 11 Phase 4 — App Pages)
+
+Authentication-internal страницы (где user проводит время) приведены к единому visual rhythm с public surfaces. Применён минимально-инвазивный подход: chrome заменён на `<PageShell>` + `<PageHeader>`, loading state — на `<LoadingScreen>`. Внутренние interaction-tighty компоненты (sidebars, forms, gantt) оставлены как есть.
+
+- **feat(user-settings):** `src/app/settings/page.tsx` — `<PageShell variant="app">` + `<PageHeader>` с back-`IconButton` + brand-логотип + UserMenu. Profile блок → `<Card>+<SectionHeader>`. Language form → `<Card>+<Button>`. Success notice получил `<emerald>` border + ✓ префикс. Title увеличен до `text-3xl`
+- **feat(project-settings):** `src/app/project/[id]/settings/page.tsx` — outer wrapper заменён на `<PageShell variant="app">`. Title увеличен до `text-3xl`. Inline section constants (`SECTION_CLASS` и т.д.) **намеренно не тронуты** — они и так визуально идентичны `<Card>+<SectionHeader>` и в файле много специфичной grid-логики (SP scale editor, members, invite links), переписывать = риск регрессии
+- **feat(quick-room-board):** `src/app/poker/[code]/quick-room-board.tsx` — outer chrome заменён на `<PageShell variant="app">`. Loading state теперь `<LoadingScreen label>`. Custom sticky header (room code, copy link, QR, leave) — sохранён, он слишком специфичен для unified `<PageHeader>`
+- **feat(estimation-board):** `src/components/estimation/estimation-board.tsx` — outer chrome заменён на `<PageShell variant="app">`. Loading state → `<LoadingScreen>`. Inline header с tickets sidebar и main area — сохранён (slot-based design board нельзя унифицировать)
+- **chore(gantt):** `src/app/project/[id]/project-content.tsx` — **намеренно не тронут**. Gantt использует `h-screen` (не `min-h-screen`) для точного chart-scroll behavior. PageShell сделал бы layout-break. По ROADMAP-у Gantt помечен как "самый рискованный, делать последним с light touch" — light touch = nothing
+- **chore(loading):** Унификация loading screen — теперь 3 страницы (`/settings`, `/poker/[code]`, `/project/[id]/estimation`) показывают одинаковый spinner + label вместо трёх разных вариантов
+
+**Что НЕ изменилось:** Server Actions, polling hooks, drag-drop logic, sidebar interactions, ticket form / import modal, voting form / results / details, gantt chart rendering, sprint timeline, time-offs.
+
+**Build:** ✓ Compiled successfully — пройдено после каждого файла.
+
+## 2026-06-01 (Epic 11 Phase 3 — Public Entry Pages)
+
+Все публичные точки входа на новые UI-primitives. Единый визуальный язык от первого экрана до создания комнаты. Flow и тексты не изменены — только chrome.
+
+- **feat(login):** `src/app/login/page.tsx` — `<PageShell variant="public">` + brand-логотип сверху (gradient blue icon + `appName`) + `<Card>` с формой через `<Field>+<Input>+<Button>`. `size="lg"` инпуты для тач-френдли feel
+- **feat(register):** `src/app/register/page.tsx` — то же шаблон, плюс `<Checkbox align="top">` для consent UX (16+ checkbox + Terms/Privacy links сохранены)
+- **feat(poker landing):** `src/app/poker/page.tsx` + `poker-landing-form.tsx` — `<PageShell>` с brand-зерном (Bolt icon в quick poker color), форма через `<Field>+<Input>+<Button>`. Method selector грид остался hand-rolled (specifically-tuned). "OR" разделитель через `<Badge>`. "Logged in as" блок получил иконку перед текстом
+- **feat(quick-room join):** `src/app/poker/[code]/quick-room-join-form.tsx` — `<Field>+<Input>+<Button>` примитивы. Consent inline-текст сохранён
+- **feat(invite):** `src/app/invite/[token]/page.tsx` — `<PageShell variant="app">` (т.к. authenticated only) + `<PageHeader>` с brand и UserMenu + `<Card>` с формой. Hero icon в gradient bg. `invite-form.tsx`: role-buttons получили per-role color encoding (DEV=indigo, QA=emerald, BA=amber) вместо одинакового синего — теперь визуально совпадает с project role colours везде в продукте. `aria-pressed` на role-buttons для a11y. SM rights notice получил `<Badge tone="warning">` и более plotting layout
+- **feat(legal):** `src/app/terms/page.tsx`, `privacy/page.tsx`, `cookies/page.tsx` — обернуты в `<PageShell variant="public">` вместо ручного div+Footer. Содержание юридического текста **не изменено** (как требует Definition of Done эпика 11)
+- **chore(footer):** Footer теперь автоматически рендерится в `<PageShell variant="public">` — ручные `<Footer />` import-ы убраны из 5 файлов
+
+**Что НЕ изменилось:** Server Actions (`login`, `register`, `joinProject`, `createQuickRoom`, `joinQuickRoomAsGuest`), schema, i18n keys, маршруты, user journey, тексты на legal-страницах.
+
+**Build:** ✓ Compiled successfully — пройдено после каждого файла.
+
+## 2026-06-01 (Epic 11 Phase 2 — Home Page Redesign)
+
+Refined-current редизайн главной страницы. Обе варианта (`/` для гостей через `LandingPage` и для авторизованных через `HomePage`) полностью на новые UI-primitives. Flow и тексты не изменились, только визуальное исполнение и UX-полировка.
+
+- **feat(home/dashboard):** `src/app/page.tsx` переписан на `<PageShell variant="app">` + `<PageHeader>` с brand (gradient blue icon), Planning Poker shortcut и UserMenu. Greeting/title иерархия (sm meta → 3xl title). Create-project в отдельном `<Card>` с inline формой. Project cards используют `<Card variant="flush">` с full-card click area, primary action (Estimation) visible, settings — `<IconButton>` с tooltip, Owner `<Badge>` для уточнения роли
+- **feat(home/dashboard):** Empty state переделан — gradient-icon в кружке вместо плоского SVG, осмысленный CTA (создать первый проект). Фильтр `project: { isQuick: false }` чтобы Quick-комнаты не засоряли список проектов
+- **feat(landing):** `src/components/landing-page.tsx` полностью переписан, использует `<PageShell variant="public">` (auto Footer) + custom `<LandingNav>` (sticky, backdrop-blur). Hero получил soft radial backdrop (CSS radial-gradient, без assets), `text-balance` / `text-pretty` для перенесов, шкала до `text-7xl` на lg. Animated-ping dot на live badge
+- **feat(landing):** Dual CTA через `<Card variant="accent">` (Quick Poker, gradient) и `<Card variant="flush" border-2>` (Sprint Planner). Hover-lift `-translate-y-0.5` + shadow growth, focus-visible rings (`ring-blue-500/30`) для a11y. Checkmarks вынесены в круглые badge перед текстом фичи, не inline icons
+- **feat(landing):** Trust block — gradient icon-containers, `tracking-[0.18em]` на uppercase заголовке. How-it-works steps в `<Card>` с number-badge. FAQ — карточки с hover-states (`hover:bg-zinc-50`)
+- **feat(landing):** Hero CTA button в How-it-works получил gradient bg + shadow-lift на hover
+- **feat(i18n):** Новые ключи `home.noProjectsTitleNew` и `home.ownerBadgeShort` в 7 языках
+- **chore(skills):** Skill `frontend-dev` уже направляет в `@/components/ui` (обновлено в Phase 1) — никаких изменений не требуется
+
+**Что НЕ изменилось:** Server Actions, schema, API routes, user journey (тот же flow: создать проект → залогиниться → попасть в /poker → создать комнату → голосовать), любые тексты (i18n keys кроме добавленных)
+
+**Build:** ✓ Compiled successfully — пройдено после Dashboard и после Landing
+
+## 2026-06-01 (Epic 11 Phase 1 — Design Foundation)
+
+Старт milestone Visual Redesign. Phase 1 закладывает shared UI primitives — без них Phase 2+ привели бы к дублированию Tailwind-классов по всем страницам.
+
+- **feat(ui):** `src/components/ui/button.tsx` — `<Button>` с variants `primary | secondary | ghost | danger` × sizes `sm | md | lg`, prop `block` для full-width
+- **feat(ui):** `src/components/ui/icon-button.tsx` — `<IconButton>` square с обязательным `label` (tooltip + aria-label) и variants `ghost | outline`
+- **feat(ui):** `src/components/ui/card.tsx` — `<Card>` (variants `default | compact | flush | accent`) и `<SectionHeader>` с opt `actions` slot
+- **feat(ui):** `src/components/ui/badge.tsx` — `<Badge>` с tones `neutral | info | success | warning | danger | accent | role-dev | role-qa | role-ba`
+- **feat(ui):** `src/components/ui/field.tsx` — `<Field>` обёртка с label+hint/error, `<Input>`, `<Textarea>` (consistent visual language), `<Checkbox>` для consent UX
+- **feat(ui):** `src/components/ui/page-shell.tsx` — `<PageShell variant="public|app">` (auto Footer для public) + `<PageHeader leading/title/trailing>` для sticky-friendly шапки
+- **feat(ui):** `src/components/ui/loading-spinner.tsx` — `<Spinner>` inline + `<LoadingScreen>` full-page
+- **feat(ui):** `src/components/ui/index.ts` — barrel re-export, импорт через `@/components/ui`
+- **chore(skills):** `skills/frontend-dev/SKILL.md` + `references/ui-patterns.md` обновлены — теперь Section 4.5 и шапка ui-patterns направляют сразу в `@/components/ui` вместо inline-разметки
+- **chore(gitignore):** `.planning/` добавлен в `.gitignore` (GSD-артефакты планирования локальные, итоги фиксируются в changelog/docs)
+
+**Что не сделано:** ни одна существующая страница ещё не портирована на новые компоненты — это Phase 2 (Home Page) и далее. Foundation готов, можно строить.
+
 ## 2026-05-31 (Phase 2 — финальный релиз: governance, redesign, polish)
 
 ### Brand & Legal

@@ -19,6 +19,7 @@ import {
 } from "@/app/actions/quick-room";
 import { revealVotes, restartVoting } from "@/app/actions/estimation";
 import { QrCodeModal } from "@/components/quick-room/qr-code-modal";
+import { PageShell, LoadingScreen } from "@/components/ui";
 
 type Method = "FIBONACCI_SP" | "HOURS" | "DAYS" | "COMPOSITE_SP";
 
@@ -70,17 +71,13 @@ export function QuickRoomBoard({ projectId, accessCode }: Props) {
   }, [accessCode]);
 
   if (!state) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-        <span className="text-sm text-zinc-400">{tc("loading")}</span>
-      </div>
-    );
+    return <LoadingScreen label={tc("loading")} />;
   }
 
   const method = state.estimationConfig.method as Method;
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
+    <PageShell variant="app">
       {/* Toast: смена метода — fade-out через ~3.5с */}
       {methodToast && (
         <div className="pointer-events-none fixed top-4 left-1/2 z-50 -translate-x-1/2">
@@ -284,9 +281,26 @@ export function QuickRoomBoard({ projectId, accessCode }: Props) {
               )}
             </>
           )}
+
+          {/* Guest upgrade hint — только для guest-юзеров.
+              Для зарегистрированных в Quick Room не показываем (они уже знают). */}
+          {state.currentUser.isGuest && (
+            <div className="mt-10 rounded-xl border border-zinc-200 bg-white p-4 text-center dark:border-zinc-800 dark:bg-zinc-900">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {t("guestHintTitle")}
+              </p>
+              <Link
+                href="/register"
+                className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                {t("guestHintAction")}
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+          )}
         </div>
       </main>
-    </div>
+    </PageShell>
   );
 }
 

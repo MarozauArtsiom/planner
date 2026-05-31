@@ -24,7 +24,9 @@
     "registerPending": "Signing up...",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
-    "logoutButton": "Sign out"
+    "logoutButton": "Sign out",
+    "guestUpgradeTitle": "You were in a guest Quick Poker session",
+    "guestUpgradeDesc": "To create projects, plan sprints, and use the Gantt board — sign up for a free account."
   },
   "userMenu": {
     "settings": "Settings",
@@ -45,6 +47,8 @@
     "memberCount1": "member",
     "memberCount234": "members",
     "memberCount5plus": "members",
+    "noProjectsTitleNew": "Create your first project",
+    "ownerBadgeShort": "Owner",
     "estimation": "Estimation",
     "estimationSession": "Estimation session",
     "projectSettings": "Project settings"
@@ -552,7 +556,9 @@
     "revote": "Revote",
     "roundTitle": "Round {number}",
     "waitingForPlayers": "Waiting for more players",
-    "roomExpired": "This Quick room has expired (TTL — 24 hours)"
+    "roomExpired": "This Quick room has expired (TTL — 24 hours)",
+    "guestHintTitle": "Need more? Sprint planning, Gantt chart, reports — in the full app.",
+    "guestHintAction": "Create a free account"
   },
   "legal": {
     "registerAgreement": "I am {age}+ and I have read and accept",

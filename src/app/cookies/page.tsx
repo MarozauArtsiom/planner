@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Footer } from "@/components/footer";
+import { PageShell } from "@/components/ui";
 import {
   APP_NAME,
   CONTACT_EMAIL,
@@ -14,7 +14,7 @@ export const metadata = {
 
 export default function CookiesPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
+    <PageShell variant="public">
       <div className="flex-1 px-4 py-10 md:py-16">
         <article className="mx-auto max-w-3xl space-y-6 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
           <header className="space-y-2 border-b border-zinc-200 pb-6 dark:border-zinc-800">
@@ -144,7 +144,6 @@ export default function CookiesPage() {
           </section>
         </article>
       </div>
-      <Footer />
-    </div>
+    </PageShell>
   );
 }

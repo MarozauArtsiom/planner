@@ -66,5 +66,8 @@ export async function login(formData: FormData) {
 
 export async function logout() {
   await clearSession();
-  redirect("/login");
+  // Редирект на landing (/) вместо /login — даёт guest-юзерам возможность
+  // увидеть главную страницу. Для registered-юзеров landing тоже OK —
+  // если хотят залогиниться обратно, кнопка в landing nav.
+  redirect("/");
 }

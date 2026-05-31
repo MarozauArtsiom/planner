@@ -24,7 +24,9 @@
     "registerPending": "Реєстрація...",
     "noAccount": "Немає акаунта?",
     "hasAccount": "Вже є акаунт?",
-    "logoutButton": "Вийти з акаунта"
+    "logoutButton": "Вийти з акаунта",
+    "guestUpgradeTitle": "Це була гостьова сесія Quick Poker",
+    "guestUpgradeDesc": "Щоб створювати проєкти, планувати спринти та користуватися Гант-чартом — зареєструйтеся."
   },
   "userMenu": {
     "settings": "Налаштування",
@@ -45,6 +47,8 @@
     "memberCount1": "учасник",
     "memberCount234": "учасники",
     "memberCount5plus": "учасників",
+    "noProjectsTitleNew": "Створіть перший проєкт",
+    "ownerBadgeShort": "Власник",
     "estimation": "Оцінка",
     "estimationSession": "Сесія оцінки",
     "projectSettings": "Налаштування проєкту"
@@ -552,7 +556,9 @@
     "revote": "Переголосувати",
     "roundTitle": "Раунд {number}",
     "waitingForPlayers": "Чекаємо інших гравців",
-    "roomExpired": "Ця Quick-кімната сплинула (TTL — 24 години)"
+    "roomExpired": "Ця Quick-кімната сплинула (TTL — 24 години)",
+    "guestHintTitle": "Хочете більше? Спринти, Гант, звіти — у повному застосунку.",
+    "guestHintAction": "Створити безкоштовний акаунт"
   },
   "legal": {
     "registerAgreement": "Мені {age}+, я прочитав та погоджуюся з",

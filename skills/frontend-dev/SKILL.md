@@ -227,6 +227,25 @@ export function useEstimationPolling(projectId: string, intervalMs = 5000) {
 
 ---
 
+## 4.5. Shared UI primitives (USE THESE)
+
+**As of Epic 11 Phase 1 (2026-06)**, the project ships a small library of shared components at `src/components/ui/`. **Always check there first** before writing inline `<button className="...">` or rolling your own Card. The library covers:
+
+- `Button`, `IconButton` — variants + sizes encoded
+- `Card`, `SectionHeader` — surface + uppercase title
+- `Badge` — tones including project role colours (`role-dev`, `role-qa`, `role-ba`)
+- `Field`, `Input`, `Textarea`, `Checkbox` — form primitives with label+error wrapper
+- `PageShell`, `PageHeader` — full-page layout with optional Footer
+- `Spinner`, `LoadingScreen` — loading indicators
+
+Import via the barrel:
+
+```tsx
+import { Button, Card, Input, PageShell } from "@/components/ui";
+```
+
+Reach for raw Tailwind only when the primitive doesn't fit. See `references/ui-patterns.md` for the complete API table + fallback snippets.
+
 ## 5. Tailwind CSS 4 Conventions
 
 The project uses **Tailwind 4** (`@tailwindcss/postcss`). Existing conventions:

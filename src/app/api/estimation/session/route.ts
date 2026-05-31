@@ -18,7 +18,10 @@ export async function GET(request: NextRequest) {
     if (!userId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, isGuest: true },
+    });
     if (!user)
       return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -219,6 +222,7 @@ export async function GET(request: NextRequest) {
         name: user.name,
         role: membership.role,
         isScrumMaster: isSM,
+        isGuest: user.isGuest,
       },
     });
   } catch (e) {

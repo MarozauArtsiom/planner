@@ -24,7 +24,9 @@
     "registerPending": "रजिस्टर हो रहा है...",
     "noAccount": "खाता नहीं है?",
     "hasAccount": "पहले से खाता है?",
-    "logoutButton": "लॉगआउट"
+    "logoutButton": "लॉगआउट",
+    "guestUpgradeTitle": "यह Quick Poker का अतिथि सत्र था",
+    "guestUpgradeDesc": "प्रोजेक्ट बनाने, स्प्रिंट प्लान करने और Gantt चार्ट का उपयोग करने के लिए — साइन अप करें।"
   },
   "userMenu": {
     "settings": "सेटिंग्स",
@@ -45,6 +47,8 @@
     "memberCount1": "सदस्य",
     "memberCount234": "सदस्य",
     "memberCount5plus": "सदस्य",
+    "noProjectsTitleNew": "अपना पहला प्रोजेक्ट बनाएं",
+    "ownerBadgeShort": "मालिक",
     "estimation": "अनुमान",
     "estimationSession": "अनुमान सत्र",
     "projectSettings": "प्रोजेक्ट सेटिंग्स"
@@ -552,7 +556,9 @@
     "revote": "फिर से वोट",
     "roundTitle": "राउंड {number}",
     "waitingForPlayers": "और खिलाड़ियों का इंतज़ार",
-    "roomExpired": "यह Quick रूम समाप्त हो गया (TTL — 24 घंटे)"
+    "roomExpired": "यह Quick रूम समाप्त हो गया (TTL — 24 घंटे)",
+    "guestHintTitle": "और चाहिए? स्प्रिंट, Gantt, रिपोर्ट — पूर्ण ऐप में।",
+    "guestHintAction": "मुफ़्त खाता बनाएं"
   },
   "legal": {
     "registerAgreement": "मैं {age}+ हूँ और मैंने पढ़ा है और स्वीकार करता हूँ",

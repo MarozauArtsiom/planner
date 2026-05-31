@@ -109,6 +109,7 @@ export interface SessionState {
     name: string;
     role: string | null;
     isScrumMaster: boolean;
+    isGuest: boolean;
   };
 }
 

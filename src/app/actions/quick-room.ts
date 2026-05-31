@@ -38,7 +38,8 @@ export async function createQuickRoom(formData: FormData) {
         expiresAt: quickRoomExpiry(),
       },
     });
-    await setSession(user.id);
+    // userType="guest" — доступ ТОЛЬКО к /poker/*, /login, /register, legal pages
+    await setSession(user.id, "guest");
     userId = user.id;
   }
 
@@ -125,7 +126,8 @@ export async function joinQuickRoomAsGuest(
         expiresAt: quickRoomExpiry(),
       },
     });
-    await setSession(user.id);
+    // userType="guest" — доступ только к /poker/*
+    await setSession(user.id, "guest");
   } else if (user.isGuest && user.name !== nickname) {
     // Гость может обновить ник перед входом
     await prisma.user.update({
