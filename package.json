@@ -8,7 +8,8 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "NODE_TLS_REJECT_UNAUTHORIZED=0 vercel --prod --yes"
+    "deploy": "NODE_TLS_REJECT_UNAUTHORIZED=0 vercel --prod --yes",
+    "migrate:prod": "node --env-file=.env.production.local scripts/apply-turso-migrations.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
