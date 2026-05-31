@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/register", "/invite", "/poker"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/invite",
+  "/poker",
+  "/terms",
+  "/privacy",
+  "/cookies",
+];
 const LANDING_PATH = "/";
 
 export function proxy(request: NextRequest) {

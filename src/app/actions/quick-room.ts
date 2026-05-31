@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
-import { getSession, setSession } from "@/lib/session";
+import { getSession, setSession, clearSession } from "@/lib/session";
 import {
   generateAccessCode,
   quickRoomExpiry,
@@ -183,6 +183,86 @@ export async function startNextRound(accessCode: string) {
   await prisma.estimationSession.update({
     where: { id: session.id },
     data: { activeTicketId: ticket.id, status: "VOTING" },
+  });
+
+  return { success: true };
+}
+
+/** Гость или участник выходит из Quick-комнаты.
+ *  Удаляем membership; если юзер гостевой — удаляем и юзера.
+ *  Sessions cookie очищается тоже, чтобы при возврате на `/poker` гость снова видел форму ника. */
+export async function leaveQuickRoom(accessCode: string) {
+  const t = await getTranslations("errors");
+
+  const userId = await getSession();
+  if (!userId) return { error: t("unauthorized") };
+
+  const room = await findActiveQuickRoom(accessCode);
+  if (!room) return { error: t("quickRoomNotFound") };
+
+  // Хост не может «выйти» — комната рассыпется. Хост может только закрыть вкладку.
+  if (room.ownerId === userId) {
+    return { error: t("hostCannotLeave") };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isGuest: true },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.vote.deleteMany({
+      where: { userId, ticket: { projectId: room.id } },
+    });
+    await tx.projectMember.deleteMany({
+      where: { userId, projectId: room.id },
+    });
+    if (user?.isGuest) {
+      // Гость без других memberships — удаляем юзера полностью
+      const stillIn = await tx.projectMember.count({ where: { userId } });
+      if (stillIn === 0) {
+        await tx.user.delete({ where: { id: userId } });
+      }
+    }
+  });
+
+  if (user?.isGuest) await clearSession();
+
+  redirect("/poker");
+}
+
+/** Хост кикает гостя из комнаты. */
+export async function kickFromQuickRoom(accessCode: string, targetUserId: string) {
+  const t = await getTranslations("errors");
+
+  const userId = await getSession();
+  if (!userId) return { error: t("unauthorized") };
+
+  const room = await findActiveQuickRoom(accessCode);
+  if (!room) return { error: t("quickRoomNotFound") };
+  if (room.ownerId !== userId) return { error: t("onlyHostAction") };
+  if (targetUserId === room.ownerId) return { error: t("cannotKickHost") };
+
+  const target = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: { isGuest: true },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.vote.deleteMany({
+      where: { userId: targetUserId, ticket: { projectId: room.id } },
+    });
+    await tx.projectMember.deleteMany({
+      where: { userId: targetUserId, projectId: room.id },
+    });
+    if (target?.isGuest) {
+      const stillIn = await tx.projectMember.count({
+        where: { userId: targetUserId },
+      });
+      if (stillIn === 0) {
+        await tx.user.delete({ where: { id: targetUserId } });
+      }
+    }
   });
 
   return { success: true };

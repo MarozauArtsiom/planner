@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-05-31 (Phase 2 — финальный релиз: governance, redesign, polish)
+
+### Brand & Legal
+- **feat(brand):** Переименование `Sprint Planner` → `Planning Poker`. Lib-константы в `src/lib/legal.ts` (CONTROLLER_NAME, CONTACT_EMAIL, JURISDICTION, MIN_AGE=16)
+- **feat(legal):** Полноценные `/terms`, `/privacy`, `/cookies` страницы — на английском, GDPR-compliant (для Польши/EU), AS IS disclaimer, limitation of liability = €0 для бесплатного сервиса, права субъектов данных Art. 15-21 GDPR, сабпроцессоры (Vercel, Turso), Min age 16
+- **feat(consent):** Чекбокс согласия на `/register` (обязательный, блокирует submit) + browse-wrap текст «By using you confirm 16+ and accept Terms / Privacy» на `/poker` landing form и join form
+- **feat(cookie-banner):** Информационный (не gating) cookie-баннер с localStorage dismiss, виден один раз на первом визите. Контент: «only functional cookies, no tracking»
+- **feat(footer):** Глобальный footer-компонент со ссылками на Terms / Privacy / Cookies / Contact + бренд-строка «Free forever • No tracking». Подключён в registration, /poker, all legal pages, error pages
+
+### Landing redesign
+- **feat(landing):** Полный редизайн главной для гостей — hero с заголовком «Estimation in 60 seconds» + **два равных CTA** карточками: Quick Poker (без регистрации, выделен синим border) и Sprint Planner (полное приложение). Trust block: «Free forever / No tracking / Minimal data». «How it works» — 3 шага Quick Poker. FAQ с 4 вопросами (free? NDA? data retention? who's behind?)
+- **feat(landing):** Footer на landing с legal ссылками
+
+### Error pages & polish
+- **feat(errors):** `/not-found` (404) и `/error` (500) — кастомные страницы с Footer, CTA «Back home» + «Try Planning Poker»
+- **feat(api):** Cron endpoint `/api/cron/cleanup-expired` — удаляет истёкшие Quick-комнаты и orphan guest-юзеров (защищён `CRON_SECRET` в проде). `vercel.json` запускает каждый час
+- **feat(quick-room):** QR-код для шеринга комнаты — модал с локально-сгенерированным SVG (пакет `qrcode`), показывает код + URL. Кнопка-иконка рядом с «Копировать ссылку»
+- **feat(quick-room):** Кнопка «Leave» для гостей в шапке. Action `leaveQuickRoom` чистит membership, удаляет guest-юзера если у него больше нет других проектов, очищает session-cookie
+- **feat(quick-room):** Action `kickFromQuickRoom` (host-only) — для будущего UI. Проверяет ownerId и не даёт кикнуть себя
+- **fix(quick-room):** Хост не может leave (ошибка «host cannot leave») — комната рассыплется
+
+### i18n
+- **feat(i18n):** Все новые ключи в 7 языках: namespace `legal` (registerAgreement, terms, privacy, and), `cookieBanner` (message, learnMore, dismiss), `errors` (notFoundTitle, serverErrorTitle, tryAgain, backHome, tryQuickPoker, hostCannotLeave, cannotKickHost), `landing` (ctaQuickBadge, ctaQuickTitle/Desc/Feature1-3/Action, ctaFullBadge/Title/Desc/Feature1-3/Action, trustTitle, trust1-3 Title/Desc, howQuickTitle/Sub, howQuick1-3 Title/Desc, faqTitle, faq1-4 Q/A, signUp), `quickRoom` (qrTitle, leave, agreementInline)
+
 ## 2026-05-31 (Видимость гистограммы: только SM/host по дефолту + тогл «показать всем»)
 - **feat(schema):** Project.showDistributionToAll: Boolean @default(false) — флаг видимости гистограммы голосов для не-админов
 - **feat(actions):** `setShowDistribution(projectId, show)` в `estimation.ts` — доступен SM/host (через `requireProjectSM`, которая для Quick-комнат проверяет owner)

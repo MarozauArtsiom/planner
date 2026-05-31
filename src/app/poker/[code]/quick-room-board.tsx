@@ -15,8 +15,10 @@ import { VoteDetails } from "@/components/estimation/vote-details";
 import {
   startNextRound,
   changeQuickRoomMethod,
+  leaveQuickRoom,
 } from "@/app/actions/quick-room";
 import { revealVotes, restartVoting } from "@/app/actions/estimation";
+import { QrCodeModal } from "@/components/quick-room/qr-code-modal";
 
 type Method = "FIBONACCI_SP" | "HOURS" | "DAYS" | "COMPOSITE_SP";
 
@@ -32,6 +34,7 @@ export function QuickRoomBoard({ projectId, accessCode }: Props) {
   const [isPending, startTransition] = useTransition();
   const [linkCopied, setLinkCopied] = useState(false);
   const [methodMenuOpen, setMethodMenuOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const [methodToast, setMethodToast] = useState<string | null>(null);
   const prevMethodRef = useRef<string | null>(null);
 
@@ -124,6 +127,17 @@ export function QuickRoomBoard({ projectId, accessCode }: Props) {
             >
               {linkCopied ? t("linkCopied") : t("copyLink")}
             </button>
+            <button
+              type="button"
+              onClick={() => setQrOpen(true)}
+              title={t("qrTitle")}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5ZM3.75 14.625c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5ZM13.5 4.875c0-.621.504-1.125 1.125-1.125h4.5C19.746 3.75 20.25 4.254 20.25 4.875v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 13.5 9.375v-4.5Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 6.75h.75v.75h-.75v-.75ZM6.75 16.5h.75v.75h-.75v-.75ZM16.5 6.75h.75v.75h-.75v-.75ZM13.5 13.5h.75v.75h-.75v-.75ZM13.5 19.5h.75v.75h-.75v-.75ZM19.5 13.5h.75v.75h-.75v-.75ZM19.5 19.5h.75v.75h-.75v-.75ZM16.5 16.5h.75v.75h-.75v-.75Z" />
+              </svg>
+            </button>
           </div>
           <div className="flex items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
             <span>{t("youAre", { name: state.currentUser.name })}</span>
@@ -132,9 +146,20 @@ export function QuickRoomBoard({ projectId, accessCode }: Props) {
                 {t("hostBadge")}
               </span>
             )}
+            {!isHost && (
+              <button
+                type="button"
+                onClick={() => act(() => leaveQuickRoom(accessCode))}
+                disabled={isPending}
+                className="rounded-md border border-zinc-200 px-2 py-0.5 text-[10px] font-medium text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+              >
+                {t("leave")}
+              </button>
+            )}
           </div>
         </div>
       </header>
+      <QrCodeModal accessCode={accessCode} open={qrOpen} onClose={() => setQrOpen(false)} />
 
       {/* Method switcher (только хост) */}
       {isHost && (

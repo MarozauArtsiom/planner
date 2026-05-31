@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { createQuickRoom } from "@/app/actions/quick-room";
+import { Footer } from "@/components/footer";
 import { PokerLandingForm } from "./poker-landing-form";
 
 export default async function PokerLandingPage({
@@ -29,7 +30,8 @@ export default async function PokerLandingPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 py-12 dark:bg-zinc-950">
+    <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-zinc-950">
+      <div className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -62,6 +64,8 @@ export default async function PokerLandingPage({
           </Link>
         </div>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 }

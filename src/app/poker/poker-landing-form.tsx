@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { MIN_AGE } from "@/lib/legal";
 
 type MethodOption = "FIBONACCI_SP" | "HOURS" | "DAYS" | "COMPOSITE_SP";
 
@@ -112,6 +114,17 @@ export function PokerLandingForm({ currentUser, createAction }: Props) {
       >
         {isPending ? t("creating") : t("createRoomButton")}
       </button>
+
+      <p className="text-center text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
+        {t("agreementInline", { age: MIN_AGE })}{" "}
+        <Link href="/terms" target="_blank" className="underline hover:text-zinc-600 dark:hover:text-zinc-300">
+          Terms
+        </Link>{" "}
+        ·{" "}
+        <Link href="/privacy" target="_blank" className="underline hover:text-zinc-600 dark:hover:text-zinc-300">
+          Privacy
+        </Link>
+      </p>
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">

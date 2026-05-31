@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { MIN_AGE } from "@/lib/legal";
 
 interface Props {
   accessCode: string;
@@ -61,6 +63,17 @@ export function QuickRoomJoinForm({ joinAction }: Props) {
       >
         {isPending ? t("joining") : t("joinButton")}
       </button>
+
+      <p className="text-center text-[11px] leading-relaxed text-zinc-400 dark:text-zinc-500">
+        {t("agreementInline", { age: MIN_AGE })}{" "}
+        <Link href="/terms" target="_blank" className="underline hover:text-zinc-600 dark:hover:text-zinc-300">
+          Terms
+        </Link>{" "}
+        ·{" "}
+        <Link href="/privacy" target="_blank" className="underline hover:text-zinc-600 dark:hover:text-zinc-300">
+          Privacy
+        </Link>
+      </p>
     </form>
   );
 }
