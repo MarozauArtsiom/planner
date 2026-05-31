@@ -1,5 +1,50 @@
 # Changelog
 
+## 2026-06-01 (Landing redesign v3 — больше анимаций и живой preview)
+
+Landing получил **scroll-reveal анимации**, **counter-up в Metrics**, **cycling Live Preview** (демо «живёт само» меняя данные каждые 5 сек), pulse-glow на primary CTA, dot-grid в hero.
+
+- **feat(hooks):** `src/hooks/use-in-view.ts` — Intersection Observer hook. Возвращает `[ref, visible]`, `once=true` по умолчанию. Cross-browser fallback (если нет `IntersectionObserver`, сразу `visible=true`)
+- **feat(landing/hero):** Primary CTA получил `.animate-pulse-glow` — мягкая пульсация blue shadow каждые 2.8с. Тонко привлекает внимание без crazy
+- **feat(landing/hero):** Добавлен **dot-grid backdrop** — radial dots pattern с radial mask. Cubic 32px grid создаёт «техническое» ощущение
+- **feat(landing/live-preview):** Превью больше не статика — **cycle через 3 snapshot-а** каждые 5.2 секунды:
+  - Round 3 → recommended 5 SP
+  - Round 4 → recommended 8 SP (спорная история, разброс шире)
+  - Round 5 → recommended 3 SP (мелкая фикса, все согласны)
+  - При смене snapshot: bars re-mount с `animate-bar-rise` — поднимаются с задержкой `i * 70ms` каждый
+  - Voter count показывается с tabular-nums
+  - **Progress dots** внизу — текущий активный snapshot подсвечен синим, остальные серые
+- **feat(landing/metrics):** Все 4 цифры **анимированно считают** от 0 до target при попадании секции во viewport. Counter использует `requestAnimationFrame` + easeOutCubic, длительность 1400ms, stagger `i * 120ms`. Hover на каждой metric — scale-105
+- **feat(landing/scroll-reveal):** 4 секции (`MetricsSection`, `DualCta`, `HowItWorks`, `FaqSection`) получили `.reveal-up` class. При попадании во viewport (threshold 0.15, rootMargin -10%) появляются с opacity + translateY переходом 700ms
+- **feat(landing/two-paths):** Cards имеют **icon scale + rotate** на hover (`scale-110 rotate-3` для Quick Poker, `-rotate-3` для Sprint Planner) — visual reaction на наведение. Quick Poker blur-corner **scale на 125%** при group-hover
+- **feat(landing/how):** Большие background numerals меняют цвет на hover (zinc-100 → blue-100). Маленький gradient circle тоже scale-110 + shadow grow
+- **feat(landing/faq):** Иконка `+` в accordion при open меняет цвет на blue (раньше только rotate)
+- **feat(globals.css):** Добавлены keyframes `pulseGlow`, `barRise`, классы `.reveal-up` / `.reveal-up--visible`, `.dot-grid` (с radial mask), `prefers-reduced-motion` отключает все 5 новых анимаций
+- **feat(i18n):** 4 новых ключа в landing namespace × 7 языков: `previewRound1`, `previewRound2`, `previewRound3`, `previewVoters` (с интерполяцией count)
+
+**Что не изменилось:** routes, Server Actions, schema. Контент тот же.
+
+**Build:** ✓ Compiled successfully in 4.3s
+
+## 2026-06-01 (Landing redesign v2 — «живо и понятно»)
+
+Полный визуальный переработка landing-page для гостей. Больше motion (CSS-only), live-preview продукта, bolder typography. Структура: Hero → Metrics → Two Paths → How → FAQ + Bottom callout.
+
+- **feat(landing/hero):** Headline до `lg:text-[5.5rem]` с **animated gradient** (`.text-gradient-animated`) на акцентном слове («Эстимация»/«Estimation»). Двухстрочный layout. Subheadline `text-xl`. **Inline dual CTA** в hero: primary `bg-gradient-to-br from-blue-500 via-blue-600 to-violet-600` с shadow-lift, secondary ghost-link для signup
+- **feat(landing/hero):** Animated mesh backdrop — 3 floating radial-blob элемента (`.animate-mesh-float`, `.animate-mesh-float-slow`) с blur и opacity. Каждый плавно покачивается, без JS. `prefers-reduced-motion` — отключено
+- **feat(landing/live-preview):** Новый раздел в hero — мини-карточка Quick Poker session: код XKZ-294 + Live badge с animate-ping + bar chart распределения голосов с подсветкой медианы (синий gradient), рекомендации (amber gradient) и выброса (red ring). Это «product in action» без скриншотов
+- **feat(landing/metrics):** Старый Trust block заменён на 4 крупные цифры: **60s** (до первого голоса), **0** (трекеров), **24h** (хранение гостей), **7** (языков). Каждая цифра `text-5xl tracking-tighter` в своём tone (blue/emerald/violet/amber)
+- **feat(landing/two-paths):** Section получил заголовок и описание. Cards усилены: Quick Poker имеет **decorative blue blur corner**, более яркий gradient bg, shadow-lift `-translate-y-1` на hover. Sprint Planner card симметрично — neutral но с тем же hover-effect
+- **feat(landing/how):** 3 шага получили **большие декоративные numerals** (text-7xl zinc-100 background) + маленький gradient circle с номером в front. Inline CTA в конце секции — gradient button
+- **feat(landing/faq):** FAQ через **native `<details>` accordion** (нет JS). Иконка `+` поворачивается на 45° при open. Карточки меняют border на blue при раскрытии. **Bottom callout** — финальный nudge с gradient icon и dark button (zinc-900)
+- **feat(landing/nav):** Brand в навбаре теперь **tri-color gradient** (blue → violet → cyan) — small visual signal что продукт «вибрирует». «Planning Poker» link в навбаре получил Bolt-иконку
+- **feat(globals.css):** Добавлены `@keyframes gradientShift` (8s loop) для текста, `@keyframes meshFloat` (8-12s loop) для blobs. `prefers-reduced-motion: reduce` отключает обе анимации
+- **feat(i18n):** 19 новых ключей в landing namespace × 7 языков: `heroAccentWord`, `heroSecondLine`, `heroPrimaryCta`, `heroSecondaryCta`, `heroBottomNote`, `previewLabel{Code,Live}`, `previewRound`, `previewLegend{Median,Recommended,Outlier}`, `metric1-4Label`, `twoPathsTitle`/`Desc`, `finalCalloutTitle`/`Desc`
+
+**Что не изменилось:** routes, Server Actions, schema, цели и конверсия (тот же flow — `/poker` → Quick Room, `/register` → full app)
+
+**Build:** ✓ Compiled successfully
+
 ## 2026-06-01 (Logout кнопка для guest + redirect → /)
 
 Гостевой юзер теперь может выйти и увидеть главную страницу (landing).

@@ -120,3 +120,124 @@ body {
       radial-gradient(circle at 80% 30%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
   }
 }
+
+/* Animated gradient text — for hero headline accent words. */
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.text-gradient-animated {
+  background: linear-gradient(
+    90deg,
+    theme(colors.blue.600),
+    theme(colors.violet.500),
+    theme(colors.blue.600),
+    theme(colors.cyan.500),
+    theme(colors.blue.600)
+  );
+  background-size: 300% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 8s ease infinite;
+}
+
+/* Floating motion for hero decorations — gentle 8s loop. */
+@keyframes meshFloat {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -14px, 0); }
+}
+
+.animate-mesh-float {
+  animation: meshFloat 8s ease-in-out infinite;
+}
+
+.animate-mesh-float-slow {
+  animation: meshFloat 12s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-gradient-animated,
+  .animate-mesh-float,
+  .animate-mesh-float-slow,
+  .animate-pulse-glow,
+  .animate-bar-rise,
+  .reveal-up,
+  .landing-fade-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .text-gradient-animated {
+    background: theme(colors.blue.600);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+}
+
+/* Pulse glow — для primary CTA в hero, привлекает внимание. */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow:
+      0 10px 25px -5px rgba(59, 130, 246, 0.35),
+      0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 15px 35px -5px rgba(59, 130, 246, 0.45),
+      0 0 0 14px rgba(59, 130, 246, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.8s ease-in-out infinite;
+}
+
+/* Bar-rise — для live-preview chart, anim при первом mount. */
+@keyframes barRise {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.animate-bar-rise {
+  transform-origin: bottom;
+  animation: barRise 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* Scroll reveal — секции плавно появляются при попадании во вьюпорт.
+   Активируется через JS (Intersection Observer adds .reveal-up--visible). */
+.reveal-up {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-up--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Dot-grid pattern для декоративного backdrop. CSS-only, no images. */
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(99, 102, 241, 0.18) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 30%, transparent 70%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .dot-grid {
+    background-image: radial-gradient(circle, rgba(99, 102, 241, 0.22) 1px, transparent 1px);
+  }
+}
