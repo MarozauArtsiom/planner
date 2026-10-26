@@ -27,6 +27,7 @@ import {
   deleteTicket,
 } from "@/app/actions/estimation";
 import { PageShell, LoadingScreen } from "@/components/ui";
+import { RetroToast } from "@/components/retro-toast";
 
 const ROLE_STYLES: Record<string, string> = {
   DEV: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300",
@@ -111,15 +112,31 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
             </h1>
           </div>
 
-          <UserMenu
-            userName={state.currentUser.name}
-            isScrumMaster={isSM}
-            roleBadge={state.currentUser.role ? (
-              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_STYLES[state.currentUser.role] ?? ""}`}>
-                {roleLabel}
-              </span>
-            ) : undefined}
-          />
+          <div className="flex items-center gap-4">
+            <div className="hidden items-center gap-3 border-r border-zinc-200 pr-4 sm:flex dark:border-zinc-700">
+              <Link
+                href={`/project/${projectId}`}
+                className="text-sm text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+              >
+                {tp("ganttPlan")}
+              </Link>
+              <Link
+                href={`/project/${projectId}/retro`}
+                className="text-sm text-emerald-600 transition-colors hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+              >
+                {tp("retro")}
+              </Link>
+            </div>
+            <UserMenu
+              userName={state.currentUser.name}
+              isScrumMaster={isSM}
+              roleBadge={state.currentUser.role ? (
+                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${ROLE_STYLES[state.currentUser.role] ?? ""}`}>
+                  {roleLabel}
+                </span>
+              ) : undefined}
+            />
+          </div>
         </div>
       </header>
 
@@ -301,6 +318,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
       </div>
 
       {showImportModal && <TicketImportModal projectId={projectId} onClose={() => setShowImportModal(false)} onSuccess={() => refresh()} />}
+      <RetroToast projectId={projectId} />
     </PageShell>
   );
 }

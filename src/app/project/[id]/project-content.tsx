@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { GanttBoard } from "@/components/gantt/gantt-board";
 import { EstimationToast } from "@/components/estimation-toast";
+import { RetroToast } from "@/components/retro-toast";
 import { UserMenu } from "@/components/user-menu";
 
 const ROLE_STYLES: Record<string, string> = {
@@ -66,6 +67,12 @@ export function ProjectContent({
               >
                 {t("estimation")}
               </Link>
+              <Link
+                href={`/project/${projectId}/retro`}
+                className="text-sm text-emerald-600 transition-colors hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+              >
+                {t("retro")}
+              </Link>
               {hasSmRights && (
                 <Link
                   href={`/project/${projectId}/settings`}
@@ -89,6 +96,7 @@ export function ProjectContent({
       </main>
 
       <EstimationToast projectId={projectId} />
+      <RetroToast projectId={projectId} />
     </div>
   );
 }

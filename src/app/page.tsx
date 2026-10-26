@@ -28,9 +28,16 @@ export default async function HomePage() {
     return <LandingPage />;
   }
 
-  // Guest-юзеры (созданные для Quick Poker) не имеют доступа к dashboard —
-  // их «home» это /poker. Жёсткое разделение по userType.
+  // Guest-юзеры (созданные для Quick Poker или Retro по ссылке) не имеют доступа к dashboard
   if (user.isGuest) {
+    const latestRetro = await prisma.retroParticipant.findFirst({
+      where: { userId: user.id },
+      include: { board: { select: { inviteToken: true } } },
+      orderBy: { lastSeenAt: "desc" },
+    });
+    if (latestRetro) {
+      redirect(`/retro/${latestRetro.board.inviteToken}`);
+    }
     redirect("/poker");
   }
 
@@ -43,12 +50,31 @@ export default async function HomePage() {
       project: {
         include: {
           owner: { select: { name: true } },
-          _count: { select: { members: true } },
+          _count: { select: { members: true, retroBoards: true } },
+          retroActionItems: {
+            where: { status: "OPEN" },
+            select: {
+              id: true,
+              title: true,
+              dueDate: true,
+              assignee: { select: { name: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+          },
         },
       },
     },
     orderBy: { joinedAt: "desc" },
   });
+
+  const allOpenActions = memberships.flatMap(({ project }) =>
+    project.retroActionItems.map((item) => ({
+      ...item,
+      projectId: project.id,
+      projectName: project.name,
+    })),
+  );
 
   const memberCountLabel = (n: number) =>
     n === 1
@@ -108,6 +134,25 @@ export default async function HomePage() {
                 </svg>
                 {tc("planningPokerNav")}
               </Link>
+              <Link
+                href="/retro"
+                className="hidden items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 sm:inline-flex dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
+              >
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                  />
+                </svg>
+                {tc("sprintRetroNav")}
+              </Link>
               <UserMenu userName={user.name} />
             </>
           }
@@ -116,18 +161,39 @@ export default async function HomePage() {
     >
       <div className="mx-auto w-full max-w-5xl px-4 py-10">
         {/* Greeting + page title */}
-        <div className="mb-8 flex flex-col gap-2">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            {t("greeting", { name: user.name })}
-          </p>
-          <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            {t("yourProjects")}
-          </h2>
+        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="flex flex-col gap-1.5">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              {t("greeting", { name: user.name })}
+            </p>
+            <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+              {t("yourProjects")}
+            </h2>
+          </div>
+
+          {/* Quick launch pills on mobile & desktop */}
+          <div className="flex flex-wrap items-center gap-2 sm:hidden">
+            <Link
+              href="/poker"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+            >
+              {tc("planningPokerNav")}
+            </Link>
+            <Link
+              href="/retro"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+            >
+              {tc("sprintRetroNav")}
+            </Link>
+          </div>
         </div>
 
         {/* Create project — inline form, primary action */}
         <Card variant="default" className="mb-8">
-          <form action={handleCreateProject} className="flex flex-col gap-3 sm:flex-row">
+          <form
+            action={handleCreateProject}
+            className="flex flex-col gap-3 sm:flex-row"
+          >
             <Input
               name="name"
               type="text"
@@ -155,6 +221,66 @@ export default async function HomePage() {
           </form>
         </Card>
 
+        {/* Open Retro Action Items summary widget */}
+        {allOpenActions.length > 0 && (
+          <Card
+            variant="default"
+            className="mb-8 border-amber-200/80 bg-amber-50/30 dark:border-amber-900/50 dark:bg-amber-950/15"
+          >
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                    {t("openRetroActionsTitle", {
+                      count: allOpenActions.length,
+                    })}
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    {t("openRetroActionsSubtitle")}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/retro"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400"
+              >
+                {t("openRetroHubLink")} →
+              </Link>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {allOpenActions.slice(0, 4).map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/project/${item.projectId}/retro`}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-amber-200/70 bg-white px-3 py-2 text-xs transition-colors hover:border-amber-300 dark:border-amber-900/40 dark:bg-zinc-900 dark:hover:border-amber-800"
+                >
+                  <span className="truncate font-medium text-zinc-800 dark:text-zinc-200">
+                    {item.title}
+                  </span>
+                  <Badge tone="neutral" size="xs">
+                    {item.projectName}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {/* Projects grid OR empty state */}
         {memberships.length === 0 ? (
           <EmptyDashboard />
@@ -163,6 +289,7 @@ export default async function HomePage() {
             {memberships.map(({ project, isScrumMaster: memberSm }) => {
               const isOwner = project.ownerId === user.id;
               const canManage = memberSm || isOwner;
+              const openActionsCount = project.retroActionItems.length;
               return (
                 <Card
                   key={project.id}
@@ -233,11 +360,30 @@ export default async function HomePage() {
                       )}
                     </div>
 
-                    {/* Primary action — Estimation */}
-                    <div className="relative z-20 mt-1 flex items-center gap-2">
+                    {/* Module quick-actions — Gantt Plan, Estimation, Retro */}
+                    <div className="relative z-20 mt-1 flex flex-wrap items-center gap-1.5">
+                      <Link
+                        href={`/project/${project.id}`}
+                        className="inline-flex items-center gap-1 rounded-md bg-zinc-100 px-2.5 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
+                          />
+                        </svg>
+                        {t("ganttPlanBtn")}
+                      </Link>
                       <Link
                         href={`/project/${project.id}/estimation`}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60"
+                        className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60"
                       >
                         <svg
                           className="h-3.5 w-3.5"
@@ -253,6 +399,30 @@ export default async function HomePage() {
                           />
                         </svg>
                         {t("estimation")}
+                      </Link>
+                      <Link
+                        href={`/project/${project.id}/retro`}
+                        className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/60"
+                      >
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                          />
+                        </svg>
+                        {t("retroBtn")}
+                        {openActionsCount > 0 && (
+                          <span className="ml-0.5 rounded-full bg-amber-500 px-1.5 py-0.2 text-[10px] font-bold text-white">
+                            {openActionsCount}
+                          </span>
+                        )}
                       </Link>
                     </div>
                   </div>
