@@ -101,6 +101,9 @@ export async function GET(request: NextRequest) {
       .map((u) => u.id);
 
     if (guestsToDelete.length > 0) {
+      await prisma.retroParticipant.deleteMany({
+        where: { userId: { in: guestsToDelete } },
+      });
       await prisma.user.deleteMany({
         where: { id: { in: guestsToDelete } },
       });

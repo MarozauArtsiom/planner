@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/register",
   "/invite",
   "/poker",
+  "/retro/",
   "/terms",
   "/privacy",
   "/cookies",
@@ -18,11 +19,12 @@ const PUBLIC_PATHS = [
  * Guest-разрешённые paths — куда guest-юзер (userType=guest) имеет доступ
  * сверх PUBLIC_PATHS. Всё остальное — только для зарегистрированных юзеров.
  *
- * Гостям ЯВНО разрешено: Quick Poker и легальные страницы.
+ * Гостям ЯВНО разрешено: Quick Poker, приватные ссылки на ретро-доски и легальные страницы.
  * Всё, что вне этого набора — должно требовать полноценный аккаунт.
  */
 const GUEST_ALLOWED_PATHS = [
   "/poker",
+  "/retro/",
   "/terms",
   "/privacy",
   "/cookies",
