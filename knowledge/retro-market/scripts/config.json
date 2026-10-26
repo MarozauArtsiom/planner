@@ -1,0 +1,22 @@
+{
+  "name": "Retro Tools Market",
+  "slug": "retro-tools-market",
+  "lang": "ru",
+  "agent": "claude",
+  "agent_cmd": [
+    "claude",
+    "-p",
+    "--model",
+    "sonnet",
+    "--permission-mode",
+    "acceptEdits",
+    "--allowedTools",
+    "Read,Write,Edit,Glob,Grep,Bash(python3 scripts/validate-wiki.py*),Bash(qmd *)"
+  ],
+  "prompt_via": "stdin",
+  "agent_timeout_sec": 1500,
+  "qmd": {
+    "enabled": false,
+    "collection": "retro-tools-market"
+  }
+}
