@@ -190,7 +190,9 @@
     "waitingTeamTitle": "Waiting for team",
     "waitingTeamDesc": "Your vote is recorded. Waiting for other members.",
     "of": "of",
-    "voted": "voted"
+    "voted": "voted",
+    "medianSp": "Median: {sp} SP",
+    "averageSp": "Average: {sp} SP"
   },
   "ticketForm": {
     "externalIdPlaceholder": "ID (PROJ-123)",
@@ -281,13 +283,14 @@
     "legendMedian": "Median",
     "legendRecommended": "Recommended",
     "legendOutlier": "Outlier",
-    "showToAll": "Show chart to everyone"
+    "showToAll": "Show chart to everyone",
+    "average": "Average"
   },
   "votingResults": {
     "recommendation": "Recommendation",
     "totalScore": "Total score: {score}",
     "devQaProportion": "Dev / QA proportion",
-    "medianScores": "Median scores",
+    "medianScores": "Criteria Scores (Median & Average)",
     "votesCount": "{count, plural, one {# vote} other {# votes}}",
     "medianValue": "Team median: {value}",
     "voteSpread": "Vote spread",
@@ -296,7 +299,13 @@
     "max": "Max",
     "hoursDaysHint": "Rounded up to a sane value • ≈{days} working days",
     "daysHint": "Rounded up to a sane value",
-    "fibonacciHint": "Team median on Fibonacci scale"
+    "fibonacciHint": "Team median on Fibonacci scale",
+    "medianEstimate": "Median Estimate",
+    "averageEstimate": "Average Estimate",
+    "averageScore": "Average score: {score}",
+    "average": "Average",
+    "averageValue": "Team average: {value}",
+    "averageFibonacciHint": "Rounded to scale from average"
   },
   "estimationToast": {
     "started": "Estimation started",

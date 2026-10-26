@@ -35,14 +35,41 @@ const ROLE_STYLES: Record<string, string> = {
   BA: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300",
 };
 
+function ButtonSpinner({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      className={`animate-spin text-current ${className}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+  );
+}
+
 export function EstimationBoard({ projectId }: { projectId: string }) {
   const t = useTranslations("estimation");
   const tp = useTranslations("project");
   const tc = useTranslations("common");
-  const { state, refresh } = useEstimationPolling(projectId, 5000);
+  const { state, refresh, optimisticUpdate, markVotedOptimistic } =
+    useEstimationPolling(projectId, 5000);
   const [showTicketForm, setShowTicketForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [selectedSp, setSelectedSp] = useState<number | null>(null);
   const [viewingTicketId, setViewingTicketId] = useState<string | null>(null);
   const [ticketStats, setTicketStats] = useState<{
@@ -57,15 +84,121 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
   const isSM = state?.currentUser.isScrumMaster ?? false;
   const canVote = !!state?.currentUser.role;
 
+  const closeTicketStats = useCallback(() => {
+    setViewingTicketId(null);
+    setTicketStats(null);
+  }, []);
+
   const act = useCallback(
-    (action: () => Promise<unknown>) => {
+    (action: () => Promise<unknown>, actionKey?: string) => {
+      if (actionKey) setPendingAction(actionKey);
       startTransition(async () => {
-        await action();
-        refresh();
+        try {
+          await action();
+          await refresh();
+        } finally {
+          setPendingAction(null);
+        }
       });
     },
     [refresh],
   );
+
+  const handleVoteSuccess = useCallback(async () => {
+    markVotedOptimistic();
+    await refresh();
+  }, [markVotedOptimistic, refresh]);
+
+  const handleActivateTicket = useCallback(
+    (ticketId: string) => {
+      setSelectedSp(null);
+      closeTicketStats();
+      optimisticUpdate((prev) => {
+        const target = prev.tickets.find((tk) => tk.id === ticketId);
+        return {
+          ...prev,
+          status: "VOTING",
+          activeTicket: target
+            ? {
+                id: target.id,
+                externalId: target.externalId,
+                externalUrl:
+                  prev.activeTicket?.id === target.id
+                    ? prev.activeTicket.externalUrl
+                    : null,
+                title: target.title,
+                description:
+                  prev.activeTicket?.id === target.id
+                    ? prev.activeTicket.description
+                    : null,
+                acceptanceCriteria:
+                  prev.activeTicket?.id === target.id
+                    ? prev.activeTicket.acceptanceCriteria
+                    : null,
+              }
+            : prev.activeTicket,
+          votes: {
+            totalVoters: prev.votes.totalVoters,
+            submittedCount: 0,
+            currentUserVoted: false,
+          },
+          voterStatus: prev.voterStatus
+            ? prev.voterStatus.map((v) => ({ ...v, voted: false }))
+            : null,
+          results: null,
+          individualVotes: null,
+          tickets: prev.tickets.map((tk) => ({
+            ...tk,
+            isActive: tk.id === ticketId,
+          })),
+        };
+      });
+      act(() => setActiveTicket(projectId, ticketId), `activate:${ticketId}`);
+    },
+    [act, closeTicketStats, optimisticUpdate, projectId],
+  );
+
+  const handleAcceptEstimation = useCallback(
+    (sp: number) => {
+      setSelectedSp(null);
+      optimisticUpdate((prev) => {
+        const activeId = prev.activeTicket?.id;
+        return {
+          ...prev,
+          status: "IDLE",
+          activeTicket: null,
+          results: null,
+          individualVotes: null,
+          tickets: prev.tickets.map((tk) =>
+            tk.id === activeId
+              ? { ...tk, storyPoints: sp, isActive: false }
+              : { ...tk, isActive: false },
+          ),
+        };
+      });
+      act(() => acceptEstimation(projectId, sp), "accept");
+    },
+    [act, optimisticUpdate, projectId],
+  );
+
+  const handleRestartVoting = useCallback(() => {
+    setSelectedSp(null);
+    optimisticUpdate((prev) => ({
+      ...prev,
+      status: "VOTING",
+      votes: {
+        ...prev.votes,
+        submittedCount: 0,
+        currentUserVoted: false,
+      },
+      voterStatus: prev.voterStatus
+        ? prev.voterStatus.map((v) => ({ ...v, voted: false }))
+        : null,
+      results: null,
+      individualVotes: null,
+    }));
+    act(() => restartVoting(projectId), "restart");
+  }, [act, optimisticUpdate, projectId]);
 
   const openTicketStats = useCallback(
     async (ticketId: string) => {
@@ -75,6 +208,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
       try {
         const res = await fetch(
           `/api/estimation/ticket-stats?ticketId=${encodeURIComponent(ticketId)}&projectId=${encodeURIComponent(projectId)}`,
+          { cache: "no-store" },
         );
         if (res.ok) {
           setTicketStats(await res.json());
@@ -85,11 +219,6 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
     },
     [projectId],
   );
-
-  const closeTicketStats = useCallback(() => {
-    setViewingTicketId(null);
-    setTicketStats(null);
-  }, []);
 
   if (!state) {
     return <LoadingScreen label={tc("loading")} />;
@@ -214,10 +343,33 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                           <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">{t("active")}</span>
                         ) : isSM ? (
                           <>
-                            <button type="button" onClick={() => act(() => setActiveTicket(projectId, ticket.id))} disabled={isPending} className="rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white opacity-0 transition-all hover:bg-blue-700 group-hover:opacity-100 disabled:opacity-50 dark:bg-blue-500">
-                              {estimated ? t("reestimate") : t("estimate")}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleActivateTicket(ticket.id);
+                              }}
+                              disabled={isPending}
+                              className={`flex items-center gap-1 rounded-md bg-blue-600 px-2.5 py-1 text-[11px] font-medium text-white transition-all hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 ${
+                                pendingAction === `activate:${ticket.id}`
+                                  ? "opacity-100"
+                                  : "opacity-0 group-hover:opacity-100"
+                              }`}
+                            >
+                              {pendingAction === `activate:${ticket.id}` && (
+                                <ButtonSpinner className="h-3 w-3" />
+                              )}
+                              <span>{estimated ? t("reestimate") : t("estimate")}</span>
                             </button>
-                            <button type="button" onClick={() => act(() => deleteTicket(projectId, ticket.id))} disabled={isPending} className="rounded-md p-1 text-zinc-300 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100 dark:text-zinc-600 dark:hover:text-red-400">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                act(() => deleteTicket(projectId, ticket.id), `delete:${ticket.id}`);
+                              }}
+                              disabled={isPending}
+                              className="rounded-md p-1 text-zinc-300 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100 dark:text-zinc-600 dark:hover:text-red-400"
+                            >
                               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                               </svg>
@@ -260,9 +412,25 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                   {state.status === "VOTING" && state.activeTicket && (
                     <>
                       <TicketInfo ticket={state.activeTicket} />
-                      {canVote && !state.votes.currentUserVoted && <div className={isSM ? "mb-6" : ""}><VotingForm key={state.estimationConfig.method} projectId={projectId} config={state.estimationConfig} onSuccess={refresh} /></div>}
+                      {canVote && !state.votes.currentUserVoted && (
+                        <div className={isSM ? "mb-6" : ""}>
+                          <VotingForm
+                            key={`${state.activeTicket.id}-${state.estimationConfig.method}`}
+                            projectId={projectId}
+                            config={state.estimationConfig}
+                            onSuccess={handleVoteSuccess}
+                          />
+                        </div>
+                      )}
                       {canVote && state.votes.currentUserVoted && !isSM && <WaitingForTeam votes={state.votes} />}
-                      {isSM && <SMVotingPanel votes={state.votes} voterStatus={state.voterStatus} onReveal={() => act(() => revealVotes(projectId))} isPending={isPending} />}
+                      {isSM && (
+                        <SMVotingPanel
+                          votes={state.votes}
+                          voterStatus={state.voterStatus}
+                          onReveal={() => act(() => revealVotes(projectId), "reveal")}
+                          isPending={isPending}
+                        />
+                      )}
                     </>
                   )}
                   {state.status === "REVEALED" && state.activeTicket && state.results && (
@@ -270,7 +438,18 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                       <TicketInfo ticket={state.activeTicket} />
                       <VotingResults results={state.results} workingHoursPerDay={state.estimationConfig.workingHoursPerDay} />
                       {state.individualVotes && state.individualVotes.length > 0 && <div className="mt-5"><VoteDetails votes={state.individualVotes} results={state.results} isSM={isSM} estimationConfig={state.estimationConfig} projectId={projectId} onRefresh={refresh} /></div>}
-                      {isSM && <SpAcceptPanel recommendedSp={state.results.recommendedSp} selectedSp={selectedSp} onSelect={setSelectedSp} onAccept={(sp) => act(() => acceptEstimation(projectId, sp))} onRestart={() => act(() => restartVoting(projectId))} isPending={isPending} spScale={state.spScale} />}
+                      {isSM && (
+                        <SpAcceptPanel
+                          recommendedSp={state.results.recommendedSp}
+                          averageSp={state.results.averageSp}
+                          selectedSp={selectedSp}
+                          onSelect={setSelectedSp}
+                          onAccept={handleAcceptEstimation}
+                          onRestart={handleRestartVoting}
+                          isPending={isPending}
+                          spScale={state.spScale}
+                        />
+                      )}
                     </>
                   )}
                 </>
@@ -300,10 +479,29 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                       {!ticketStats.results && ticketStats.individualVotes.length === 0 && <p className="py-8 text-center text-sm text-zinc-400">{t("noVotes")}</p>}
                       {isSM && (
                         <div className="border-t border-zinc-200 pt-4 dark:border-zinc-700">
-                          {ticketStats.results && <SpAcceptPanel recommendedSp={ticketStats.results.recommendedSp} selectedSp={statsSp} onSelect={setStatsSp} onAccept={(sp) => { act(async () => { await acceptEstimation(projectId, sp); closeTicketStats(); }); }} onRestart={() => { act(async () => { await setActiveTicket(projectId, viewingTicketId); closeTicketStats(); }); }} isPending={isPending} spScale={state.spScale} />}
+                          {ticketStats.results && (
+                            <SpAcceptPanel
+                              recommendedSp={ticketStats.results.recommendedSp}
+                              averageSp={ticketStats.results.averageSp}
+                              selectedSp={statsSp}
+                              onSelect={setStatsSp}
+                              onAccept={(sp) => {
+                                act(async () => {
+                                  await acceptEstimation(projectId, sp);
+                                  closeTicketStats();
+                                }, "accept");
+                              }}
+                              onRestart={() => {
+                                handleActivateTicket(viewingTicketId);
+                              }}
+                              isPending={isPending}
+                              spScale={state.spScale}
+                            />
+                          )}
                           {!ticketStats.results && (
-                            <button type="button" onClick={() => { act(async () => { await setActiveTicket(projectId, viewingTicketId); closeTicketStats(); }); }} disabled={isPending} className="w-full rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
-                              {t("estimate")}
+                            <button type="button" onClick={() => handleActivateTicket(viewingTicketId)} disabled={isPending} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
+                              {isPending && <ButtonSpinner />}
+                              <span>{t("estimate")}</span>
                             </button>
                           )}
                         </div>
@@ -395,8 +593,9 @@ function SMVotingPanel({ votes, voterStatus, onReveal, isPending }: { votes: Vot
         </div>
       )}
       {votes.totalVoters === 0 && <p className="mb-4 text-sm text-amber-600 dark:text-amber-400">{t("noVoters")}</p>}
-      <button type="button" onClick={onReveal} disabled={isPending || votes.submittedCount === 0} className="w-full rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
-        {isPending ? t("processing") : votes.submittedCount > 0 ? t("revealResultsCount", { count: votes.submittedCount }) : t("revealResults")}
+      <button type="button" onClick={onReveal} disabled={isPending || votes.submittedCount === 0} className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
+        {isPending && <ButtonSpinner />}
+        <span>{isPending ? t("processing") : votes.submittedCount > 0 ? t("revealResultsCount", { count: votes.submittedCount }) : t("revealResults")}</span>
       </button>
     </div>
   );
@@ -404,7 +603,25 @@ function SMVotingPanel({ votes, voterStatus, onReveal, isPending }: { votes: Vot
 
 const DEFAULT_SP_OPTIONS = [1, 2, 3, 5, 8, 13];
 
-function SpAcceptPanel({ recommendedSp, selectedSp, onSelect, onAccept, onRestart, isPending, spScale }: { recommendedSp: number; selectedSp: number | null; onSelect: (sp: number) => void; onAccept: (sp: number) => void; onRestart: () => void; isPending: boolean; spScale?: SpScaleOption[] }) {
+function SpAcceptPanel({
+  recommendedSp,
+  averageSp,
+  selectedSp,
+  onSelect,
+  onAccept,
+  onRestart,
+  isPending,
+  spScale,
+}: {
+  recommendedSp: number;
+  averageSp: number;
+  selectedSp: number | null;
+  onSelect: (sp: number) => void;
+  onAccept: (sp: number) => void;
+  onRestart: () => void;
+  isPending: boolean;
+  spScale?: SpScaleOption[];
+}) {
   const t = useTranslations("estimation");
   const activeSp = selectedSp ?? recommendedSp;
   const options = spScale && spScale.length > 0 ? spScale : DEFAULT_SP_OPTIONS.map((v) => ({ value: v, label: "" }));
@@ -412,24 +629,60 @@ function SpAcceptPanel({ recommendedSp, selectedSp, onSelect, onAccept, onRestar
   return (
     <div className="mt-6 space-y-4">
       <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="mb-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">{t("storyPoints")}</p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider dark:text-zinc-400">{t("storyPoints")}</p>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <button
+              type="button"
+              onClick={() => onSelect(recommendedSp)}
+              disabled={isPending}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-medium transition-colors ${
+                activeSp === recommendedSp
+                  ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300"
+                  : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-blue-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+              }`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+              {t("medianSp", { sp: recommendedSp })}
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelect(averageSp)}
+              disabled={isPending}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-medium transition-colors ${
+                activeSp === averageSp
+                  ? "border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
+                  : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-indigo-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400"
+              }`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+              {t("averageSp", { sp: averageSp })}
+            </button>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2">
           {options.map((opt) => (
             <button key={opt.value} type="button" onClick={() => onSelect(opt.value)} disabled={isPending} className={`group/sp relative flex flex-col items-center justify-center rounded-lg px-3 py-2 text-sm font-bold transition-all disabled:opacity-50 ${activeSp === opt.value ? "bg-blue-600 text-white shadow-md dark:bg-blue-500" : "border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-blue-300 hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-blue-700 dark:hover:bg-blue-950/30"}`}>
               <span>{opt.value}</span>
               {opt.label && <span className={`mt-0.5 text-[9px] font-normal leading-tight ${activeSp === opt.value ? "text-blue-200" : "text-zinc-400 dark:text-zinc-500"}`}>{opt.label}</span>}
-              {opt.value === recommendedSp && activeSp !== opt.value && <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-blue-400" />}
+              {opt.value === recommendedSp && activeSp !== opt.value && <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-blue-400" title={t("medianSp", { sp: recommendedSp })} />}
+              {opt.value === averageSp && opt.value !== recommendedSp && activeSp !== opt.value && <span className="absolute -top-1 -left-1 h-2 w-2 rounded-full bg-indigo-400" title={t("averageSp", { sp: averageSp })} />}
             </button>
           ))}
         </div>
-        {activeSp !== recommendedSp && <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">{t("recommendation", { sp: recommendedSp })}</p>}
+        {activeSp !== recommendedSp && activeSp !== averageSp && (
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            {t("recommendation", { sp: recommendedSp })} • {t("averageSp", { sp: averageSp })}
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <button type="button" onClick={() => onAccept(activeSp)} disabled={isPending} className="flex-1 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
-          {t("accept", { sp: activeSp })}
+        <button type="button" onClick={() => onAccept(activeSp)} disabled={isPending} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600">
+          {isPending && <ButtonSpinner />}
+          <span>{t("accept", { sp: activeSp })}</span>
         </button>
-        <button type="button" onClick={onRestart} disabled={isPending} className="rounded-xl border border-zinc-300 px-5 py-3.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
-          {t("revote")}
+        <button type="button" onClick={onRestart} disabled={isPending} className="flex items-center justify-center gap-2 rounded-xl border border-zinc-300 px-5 py-3.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+          <span>{t("revote")}</span>
         </button>
       </div>
     </div>

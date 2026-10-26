@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback, useEffect, useRef } from "react";
+import { useState, useTransition, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
@@ -28,40 +28,92 @@ interface Props {
   accessCode: string;
 }
 
+function ButtonSpinner({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      className={`animate-spin text-current ${className}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+  );
+}
+
 export function QuickRoomBoard({ projectId, accessCode }: Props) {
   const t = useTranslations("quickRoom");
   const tc = useTranslations("common");
-  const { state, refresh } = useEstimationPolling(projectId, 5000);
+  const { state, refresh, optimisticUpdate, markVotedOptimistic } =
+    useEstimationPolling(projectId, 5000);
   const [isPending, startTransition] = useTransition();
   const [linkCopied, setLinkCopied] = useState(false);
   const [methodMenuOpen, setMethodMenuOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [methodToast, setMethodToast] = useState<string | null>(null);
-  const prevMethodRef = useRef<string | null>(null);
+  const [prevMethod, setPrevMethod] = useState<string | null>(null);
 
   const isHost = state?.quickRoom?.isHost ?? false;
   const currentMethod = state?.estimationConfig.method ?? null;
 
-  // Toast: метод изменился (для всех, включая хоста — подтверждение что апдейт долетел)
-  useEffect(() => {
-    if (!currentMethod) return;
-    if (prevMethodRef.current && prevMethodRef.current !== currentMethod) {
+  if (currentMethod && currentMethod !== prevMethod) {
+    setPrevMethod(currentMethod);
+    if (prevMethod !== null) {
       setMethodToast(currentMethod);
-      const timer = setTimeout(() => setMethodToast(null), 3500);
-      return () => clearTimeout(timer);
     }
-    prevMethodRef.current = currentMethod;
-  }, [currentMethod]);
+  }
+
+  // Toast: метод изменился — авто-скрытие через 3.5с
+  useEffect(() => {
+    if (!methodToast) return;
+    const timer = setTimeout(() => setMethodToast(null), 3500);
+    return () => clearTimeout(timer);
+  }, [methodToast]);
 
   const act = useCallback(
     (action: () => Promise<unknown>) => {
       startTransition(async () => {
         await action();
-        refresh();
+        await refresh();
       });
     },
     [refresh],
   );
+
+  const handleVoteSuccess = useCallback(async () => {
+    markVotedOptimistic();
+    await refresh();
+  }, [markVotedOptimistic, refresh]);
+
+  const handleRestartVoting = useCallback(() => {
+    optimisticUpdate((prev) => ({
+      ...prev,
+      status: "VOTING",
+      votes: {
+        ...prev.votes,
+        submittedCount: 0,
+        currentUserVoted: false,
+      },
+      voterStatus: prev.voterStatus
+        ? prev.voterStatus.map((v) => ({ ...v, voted: false }))
+        : null,
+      results: null,
+      individualVotes: null,
+    }));
+    act(() => restartVoting(projectId));
+  }, [act, optimisticUpdate, projectId]);
 
   const copyLink = useCallback(() => {
     const url = `${window.location.origin}/poker/${accessCode}`;
@@ -219,10 +271,10 @@ export function QuickRoomBoard({ projectId, accessCode }: Props) {
               {!state.votes.currentUserVoted && (
                 <div className={isHost ? "mb-6" : ""}>
                   <VotingForm
-                    key={state.estimationConfig.method}
+                    key={`${state.activeTicket.id}-${state.estimationConfig.method}`}
                     projectId={projectId}
                     config={state.estimationConfig}
-                    onSuccess={refresh}
+                    onSuccess={handleVoteSuccess}
                   />
                 </div>
               )}
@@ -265,13 +317,14 @@ export function QuickRoomBoard({ projectId, accessCode }: Props) {
                     type="button"
                     onClick={() => act(() => startNextRound(accessCode))}
                     disabled={isPending}
-                    className="flex-1 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
                   >
-                    {t("nextRound")}
+                    {isPending && <ButtonSpinner />}
+                    <span>{t("nextRound")}</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => act(() => restartVoting(projectId))}
+                    onClick={handleRestartVoting}
                     disabled={isPending}
                     className="rounded-xl border border-zinc-300 px-5 py-3.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
                   >
@@ -439,13 +492,16 @@ function HostVotingPanel({
         type="button"
         onClick={onReveal}
         disabled={isPending || votes.submittedCount === 0}
-        className="w-full rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
       >
-        {isPending
-          ? te("processing")
-          : votes.submittedCount > 0
-            ? te("revealResultsCount", { count: votes.submittedCount })
-            : te("revealResults")}
+        {isPending && <ButtonSpinner />}
+        <span>
+          {isPending
+            ? te("processing")
+            : votes.submittedCount > 0
+              ? te("revealResultsCount", { count: votes.submittedCount })
+              : te("revealResults")}
+        </span>
       </button>
     </div>
   );

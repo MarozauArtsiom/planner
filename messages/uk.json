@@ -190,7 +190,9 @@
     "waitingTeamTitle": "Очікування команди",
     "waitingTeamDesc": "Ваш голос враховано. Чекаємо на інших учасників.",
     "of": "з",
-    "voted": "проголосували"
+    "voted": "проголосували",
+    "medianSp": "Медіана: {sp} SP",
+    "averageSp": "Середнє: {sp} SP"
   },
   "ticketForm": {
     "externalIdPlaceholder": "ID (PROJ-123)",
@@ -281,13 +283,14 @@
     "legendMedian": "Медіана",
     "legendRecommended": "Рекомендація",
     "legendOutlier": "Викид",
-    "showToAll": "Показати графік усім"
+    "showToAll": "Показати графік усім",
+    "average": "Середнє"
   },
   "votingResults": {
     "recommendation": "Рекомендація",
     "totalScore": "Загальний бал: {score}",
     "devQaProportion": "Пропорція Dev / QA",
-    "medianScores": "Медіанні бали",
+    "medianScores": "Бали за критеріями (медіана та середнє)",
     "votesCount": "{count, plural, one {# голос} few {# голоси} many {# голосів} other {# голосів}}",
     "medianValue": "Медіана команди: {value}",
     "voteSpread": "Розкид голосів",
@@ -296,7 +299,13 @@
     "max": "Макс",
     "hoursDaysHint": "Округлено вгору до sane-значення • ≈{days} робочих днів",
     "daysHint": "Округлено вгору до sane-значення",
-    "fibonacciHint": "Медіана команди за шкалою Fibonacci"
+    "fibonacciHint": "Медіана команди за шкалою Fibonacci",
+    "medianEstimate": "Медіанна оцінка",
+    "averageEstimate": "Середня оцінка",
+    "averageScore": "Середній бал: {score}",
+    "average": "Середнє",
+    "averageValue": "Середнє команди: {value}",
+    "averageFibonacciHint": "Округлено за шкалою від середнього"
   },
   "estimationToast": {
     "started": "Оцінка почалася",

@@ -18,40 +18,52 @@ export async function GET(request: NextRequest) {
     if (!userId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, name: true, isGuest: true },
-    });
-    if (!user)
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-
     const projectId = request.nextUrl.searchParams.get("projectId");
     if (!projectId)
       return NextResponse.json({ error: "projectId required" }, { status: 400 });
 
-    const membership = await prisma.projectMember.findUnique({
-      where: { userId_projectId: { userId, projectId } },
-    });
+    const [user, membership, session, project, spScaleItems, allTickets] =
+      await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, name: true, isGuest: true },
+        }),
+        prisma.projectMember.findUnique({
+          where: { userId_projectId: { userId, projectId } },
+        }),
+        prisma.estimationSession.findFirst({
+          where: { projectId },
+          orderBy: { createdAt: "desc" },
+          include: { activeTicket: true },
+        }),
+        prisma.project.findUnique({
+          where: { id: projectId },
+          select: {
+            ownerId: true,
+            estimationMethod: true,
+            workingHoursPerDay: true,
+            showDistributionToAll: true,
+            isQuick: true,
+            accessCode: true,
+          },
+        }),
+        prisma.spScaleItem.findMany({
+          where: { projectId },
+          orderBy: { value: "asc" },
+          select: { value: true, label: true, durationDays: true },
+        }),
+        prisma.ticket.findMany({
+          where: { projectId },
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
+
+    if (!user)
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+
     if (!membership)
       return NextResponse.json({ error: "Not a member" }, { status: 403 });
 
-    const session = await prisma.estimationSession.findFirst({
-      where: { projectId },
-      orderBy: { createdAt: "desc" },
-      include: { activeTicket: true },
-    });
-
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-      select: {
-        ownerId: true,
-        estimationMethod: true,
-        workingHoursPerDay: true,
-        showDistributionToAll: true,
-        isQuick: true,
-        accessCode: true,
-      },
-    });
     // В Quick-комнате голосуют все участники без оглядки на роль;
     // в обычном проекте — только DEV/QA/BA.
     const totalVoters = project?.isQuick
@@ -101,11 +113,6 @@ export async function GET(request: NextRequest) {
       }
 
       if (session.status === "REVEALED") {
-        const spScaleItems = await prisma.spScaleItem.findMany({
-          where: { projectId },
-          select: { value: true, label: true, durationDays: true },
-        });
-
         if (method === "COMPOSITE_SP") {
           const compositeVotes = votes
             .filter(
@@ -166,16 +173,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const spScaleForOptions = await prisma.spScaleItem.findMany({
-      where: { projectId },
-      orderBy: { value: "asc" },
-      select: { value: true, label: true },
-    });
-
-    const allTickets = await prisma.ticket.findMany({
-      where: { projectId },
-      orderBy: { createdAt: "desc" },
-    });
+    const spScaleForOptions = spScaleItems.map((s) => ({
+      value: s.value,
+      label: s.label,
+    }));
 
     const tickets = allTickets.map((t) => ({
       id: t.id,

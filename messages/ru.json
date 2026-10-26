@@ -190,7 +190,9 @@
     "waitingTeamTitle": "Ожидание команды",
     "waitingTeamDesc": "Ваш голос учтён. Ожидаем остальных участников.",
     "of": "из",
-    "voted": "проголосовали"
+    "voted": "проголосовали",
+    "medianSp": "Медиана: {sp} SP",
+    "averageSp": "Среднее: {sp} SP"
   },
   "ticketForm": {
     "externalIdPlaceholder": "ID (PROJ-123)",
@@ -281,13 +283,14 @@
     "legendMedian": "Медиана",
     "legendRecommended": "Рекомендация",
     "legendOutlier": "Выброс",
-    "showToAll": "Показать график всем"
+    "showToAll": "Показать график всем",
+    "average": "Среднее"
   },
   "votingResults": {
     "recommendation": "Рекомендация",
     "totalScore": "Общий балл: {score}",
     "devQaProportion": "Пропорция Dev / QA",
-    "medianScores": "Медианные баллы",
+    "medianScores": "Баллы по критериям (медиана и среднее)",
     "votesCount": "{count, plural, one {# голос} few {# голоса} other {# голосов}}",
     "medianValue": "Медиана команды: {value}",
     "voteSpread": "Разброс голосов",
@@ -296,7 +299,13 @@
     "max": "Макс",
     "hoursDaysHint": "Округлено вверх до sane-значения • ≈{days} рабочих дней",
     "daysHint": "Округлено вверх до sane-значения",
-    "fibonacciHint": "Медиана команды по Fibonacci-шкале"
+    "fibonacciHint": "Медиана команды по Fibonacci-шкале",
+    "medianEstimate": "Медианная оценка",
+    "averageEstimate": "Средняя оценка",
+    "averageScore": "Средний балл: {score}",
+    "average": "Среднее",
+    "averageValue": "Среднее команды: {value}",
+    "averageFibonacciHint": "Округлено по шкале от среднего"
   },
   "estimationToast": {
     "started": "Оценка началась",

@@ -15,6 +15,8 @@ interface Props {
   shape?: number[];
   /** Медиана команды — подсвечивается синим. */
   median: number;
+  /** Среднее арифметическое команды. */
+  average?: number;
   /** Округлённое значение (рекомендация). Если совпадает с медианой — не выделяется отдельно. */
   recommended?: number;
   /** Единица измерения для подписи: "h", "d", "SP" или пусто. */
@@ -52,6 +54,7 @@ export function VoteDistributionChart({
   votes,
   shape,
   median,
+  average,
   recommended,
   unit = "",
   title,
@@ -233,6 +236,12 @@ export function VoteDistributionChart({
           <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-500 dark:bg-blue-400" />
           {t("legendMedian")}: {formatLabel(median, unit)}
         </span>
+        {average != null && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-indigo-500 dark:bg-indigo-400" />
+            {t("average")}: {formatLabel(average, unit)}
+          </span>
+        )}
         {recommended != null && recommended !== median && (
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-sm bg-amber-400 dark:bg-amber-500" />

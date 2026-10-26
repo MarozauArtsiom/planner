@@ -190,7 +190,9 @@
     "waitingTeamTitle": "Чаканне каманды",
     "waitingTeamDesc": "Ваш голас улічаны. Чакаем астатніх удзельнікаў.",
     "of": "з",
-    "voted": "прагаласавалі"
+    "voted": "прагаласавалі",
+    "medianSp": "Медыяна: {sp} SP",
+    "averageSp": "Сярэдняе: {sp} SP"
   },
   "ticketForm": {
     "externalIdPlaceholder": "ID (PROJ-123)",
@@ -281,13 +283,14 @@
     "legendMedian": "Медыяна",
     "legendRecommended": "Рэкамендацыя",
     "legendOutlier": "Выкід",
-    "showToAll": "Паказаць графік усім"
+    "showToAll": "Паказаць графік усім",
+    "average": "Сярэдняе"
   },
   "votingResults": {
     "recommendation": "Рэкамендацыя",
     "totalScore": "Агульны бал: {score}",
     "devQaProportion": "Прапорцыя Dev / QA",
-    "medianScores": "Медыянныя балы",
+    "medianScores": "Балы па крытэрыях (медыяна і сярэдняе)",
     "votesCount": "{count, plural, one {# голас} few {# галасы} many {# галасоў} other {# галасоў}}",
     "medianValue": "Медыяна каманды: {value}",
     "voteSpread": "Разброс галасоў",
@@ -296,7 +299,13 @@
     "max": "Макс",
     "hoursDaysHint": "Акруглена ўверх да sane-значэння • ≈{days} працоўных дзён",
     "daysHint": "Акруглена ўверх да sane-значэння",
-    "fibonacciHint": "Медыяна каманды па шкале Fibonacci"
+    "fibonacciHint": "Медыяна каманды па шкале Fibonacci",
+    "medianEstimate": "Медыянная ацэнка",
+    "averageEstimate": "Сярэдняя ацэнка",
+    "averageScore": "Сярэдні бал: {score}",
+    "average": "Сярэдняе",
+    "averageValue": "Сярэдняе каманды: {value}",
+    "averageFibonacciHint": "Акруглена па шкале ад сярэдняга"
   },
   "estimationToast": {
     "started": "Ацэнка пачалася",

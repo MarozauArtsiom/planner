@@ -57,6 +57,13 @@ export interface EstimationResult {
   avgUncertainty: number;
   totalScore: number;
   recommendedSp: number;
+  meanDevEffort: number;
+  meanQaEffort: number;
+  meanRisk: number;
+  meanUncertainty: number;
+  meanTotalScore: number;
+  averageSp: number;
+  exactAverageSp: number;
   devProportion: number;
 }
 
@@ -69,6 +76,11 @@ function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function mean(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
 const DEFAULT_SP_VALUES = [1, 2, 3, 5, 8, 13];
@@ -97,6 +109,13 @@ export function calculateEstimation(
       avgUncertainty: 0,
       totalScore: 0,
       recommendedSp: 1,
+      meanDevEffort: 0,
+      meanQaEffort: 0,
+      meanRisk: 0,
+      meanUncertainty: 0,
+      meanTotalScore: 0,
+      averageSp: 1,
+      exactAverageSp: 1,
       devProportion: 0.5,
     };
   }
@@ -110,6 +129,16 @@ export function calculateEstimation(
   const effortSum = avgDevEffort + avgQaEffort;
   const devProportion = effortSum > 0 ? avgDevEffort / effortSum : 0.5;
 
+  const meanDevEffort = mean(votes.map((v) => v.devEffort));
+  const meanQaEffort = mean(votes.map((v) => v.qaEffort));
+  const meanRisk = mean(votes.map((v) => v.risk));
+  const meanUncertainty = mean(votes.map((v) => v.uncertainty));
+  const meanTotalScore = meanDevEffort + meanQaEffort + meanRisk + meanUncertainty;
+  const individualSps = votes.map((v) =>
+    scoreToSP(v.devEffort + v.qaEffort + v.risk + v.uncertainty, availableSpValues),
+  );
+  const exactAverageSp = mean(individualSps);
+
   return {
     avgDevEffort: round2(avgDevEffort),
     avgQaEffort: round2(avgQaEffort),
@@ -117,6 +146,13 @@ export function calculateEstimation(
     avgUncertainty: round2(avgUncertainty),
     totalScore: round2(totalScore),
     recommendedSp: scoreToSP(totalScore, availableSpValues),
+    meanDevEffort: round2(meanDevEffort),
+    meanQaEffort: round2(meanQaEffort),
+    meanRisk: round2(meanRisk),
+    meanUncertainty: round2(meanUncertainty),
+    meanTotalScore: round2(meanTotalScore),
+    averageSp: scoreToSP(meanTotalScore, availableSpValues),
+    exactAverageSp: round2(exactAverageSp),
     devProportion: round2(devProportion),
   };
 }
@@ -133,19 +169,31 @@ export interface SimpleEstimationResult {
   method: EstimationMethod;
   medianValue: number;
   /**
-   * Рекомендованное round-up значение из шкалы метода.
+   * Рекомендованное round-up значение из шкалы метода (по медиане).
    * Для FIBONACCI_SP равно medianValue (голосуют сразу значениями шкалы).
    * Для HOURS/DAYS — ближайшее большее значение из шкалы.
    */
   roundedValue: number;
+  /**
+   * Точное среднее арифметическое голосов команды.
+   */
+  averageValue: number;
+  /**
+   * Рекомендованное round-up значение из шкалы метода (по среднему).
+   */
+  averageRoundedValue: number;
   minValue: number;
   maxValue: number;
   voteCount: number;
   /**
-   * SP-эквивалент для записи в `Ticket.storyPoints` после accept.
+   * SP-эквивалент для записи в `Ticket.storyPoints` после accept (по медиане).
    * Подбирается ближайшим значением из проектной SpScale по длительности в днях.
    */
   recommendedSp: number;
+  /**
+   * SP-эквивалент по среднему значению.
+   */
+  averageSp: number;
   /**
    * Длительность задачи в рабочих днях, рассчитанная из rounded value
    * (нужно для соотнесения с SpScale).
@@ -224,25 +272,31 @@ export function calculateSimpleEstimation(
   workingHoursPerDay = 8,
 ): SimpleEstimationResult {
   if (votes.length === 0) {
+    const defaultSp = spScale[0]?.value ?? 1;
     return {
       method,
       medianValue: 0,
       roundedValue: 0,
+      averageValue: 0,
+      averageRoundedValue: 0,
       minValue: 0,
       maxValue: 0,
       voteCount: 0,
-      recommendedSp: spScale[0]?.value ?? 1,
+      recommendedSp: defaultSp,
+      averageSp: defaultSp,
       durationDays: 1,
     };
   }
 
   const values = votes.map((v) => v.value);
   const medianValue = median(values);
+  const averageValue = mean(values);
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
 
   const shape = getShapeForMethod(method);
   const roundedValue = roundUpToShape(medianValue, shape);
+  const averageRoundedValue = roundUpToShape(averageValue, shape);
 
   const durationDays = durationDaysForSimple(
     method,
@@ -252,14 +306,25 @@ export function calculateSimpleEstimation(
   );
   const recommendedSp = spByDurationDays(durationDays, spScale);
 
+  const avgDurationDays = durationDaysForSimple(
+    method,
+    averageRoundedValue,
+    spScale,
+    workingHoursPerDay,
+  );
+  const averageSp = spByDurationDays(avgDurationDays, spScale);
+
   return {
     method,
     medianValue: round2(medianValue),
     roundedValue: round2(roundedValue),
+    averageValue: round2(averageValue),
+    averageRoundedValue: round2(averageRoundedValue),
     minValue: round2(minValue),
     maxValue: round2(maxValue),
     voteCount: votes.length,
     recommendedSp,
+    averageSp,
     durationDays,
   };
 }

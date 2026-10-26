@@ -8,7 +8,32 @@ import type { EstimationConfig } from "@/hooks/use-estimation-polling";
 interface VotingFormProps {
   projectId: string;
   config: EstimationConfig;
-  onSuccess: () => void;
+  onSuccess: () => Promise<void> | void;
+}
+
+function SpinnerIcon() {
+  return (
+    <svg
+      className="h-5 w-5 animate-spin text-current"
+      fill="none"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+  );
 }
 
 export function VotingForm({ projectId, config, onSuccess }: VotingFormProps) {
@@ -29,7 +54,7 @@ function VotingFormComposite({
   onSuccess,
 }: {
   projectId: string;
-  onSuccess: () => void;
+  onSuccess: () => Promise<void> | void;
 }) {
   const t = useTranslations("votingForm");
 
@@ -117,7 +142,8 @@ function VotingFormComposite({
   const allSelected = Object.values(selected).every((v) => v !== null);
 
   const handleSubmit = () => {
-    if (!allSelected) return;
+    if (!allSelected || isPending) return;
+    setError(null);
     startTransition(async () => {
       const formData = new FormData();
       formData.set("devEffort", String(selected.devEffort));
@@ -128,13 +154,13 @@ function VotingFormComposite({
       if (result && "error" in result) {
         setError(result.error ?? t("errorFallback"));
       } else {
-        onSuccess();
+        await onSuccess();
       }
     });
   };
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 transition-opacity ${isPending ? "pointer-events-none opacity-80" : ""}`} aria-busy={isPending}>
       {CRITERIA.map((criterion) => (
         <div
           key={criterion.key}
@@ -187,9 +213,10 @@ function VotingFormComposite({
         type="button"
         disabled={!allSelected || isPending}
         onClick={handleSubmit}
-        className="w-full rounded-xl bg-blue-600 px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+        className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-blue-600 px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600"
       >
-        {isPending ? t("submitPending") : t("submitButton")}
+        {isPending && <SpinnerIcon />}
+        <span>{isPending ? t("submitPending") : t("submitButton")}</span>
       </button>
     </div>
   );
@@ -215,7 +242,7 @@ function VotingFormSimple({
 }: {
   projectId: string;
   config: EstimationConfig;
-  onSuccess: () => void;
+  onSuccess: () => Promise<void> | void;
 }) {
   const t = useTranslations("votingForm");
   const [selected, setSelected] = useState<number | null>(null);
@@ -223,7 +250,8 @@ function VotingFormSimple({
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = () => {
-    if (selected == null) return;
+    if (selected == null || isPending) return;
+    setError(null);
     startTransition(async () => {
       const formData = new FormData();
       formData.set("singleValue", String(selected));
@@ -231,7 +259,7 @@ function VotingFormSimple({
       if (result && "error" in result) {
         setError(result.error ?? t("errorFallback"));
       } else {
-        onSuccess();
+        await onSuccess();
       }
     });
   };
@@ -250,7 +278,7 @@ function VotingFormSimple({
         : t("simpleDaysDesc");
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 transition-opacity ${isPending ? "pointer-events-none opacity-80" : ""}`} aria-busy={isPending}>
       <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/40">
         <div className="mb-3 flex items-center gap-2">
           <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
@@ -303,9 +331,10 @@ function VotingFormSimple({
         type="button"
         disabled={selected == null || isPending}
         onClick={handleSubmit}
-        className="w-full rounded-xl bg-blue-600 px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+        className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-blue-600 px-6 py-4 text-base font-semibold text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600"
       >
-        {isPending ? t("submitPending") : t("submitButton")}
+        {isPending && <SpinnerIcon />}
+        <span>{isPending ? t("submitPending") : t("submitButton")}</span>
       </button>
     </div>
   );

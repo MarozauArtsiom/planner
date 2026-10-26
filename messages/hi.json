@@ -190,7 +190,9 @@
     "waitingTeamTitle": "टीम की प्रतीक्षा",
     "waitingTeamDesc": "आपका वोट दर्ज हो गया है। अन्य सदस्यों की प्रतीक्षा है।",
     "of": "में से",
-    "voted": "ने मतदान किया"
+    "voted": "ने मतदान किया",
+    "medianSp": "माध्यिका: {sp} SP",
+    "averageSp": "औसत: {sp} SP"
   },
   "ticketForm": {
     "externalIdPlaceholder": "ID (PROJ-123)",
@@ -281,13 +283,14 @@
     "legendMedian": "मध्यिका",
     "legendRecommended": "अनुशंसा",
     "legendOutlier": "आउटलायर",
-    "showToAll": "सभी को चार्ट दिखाएं"
+    "showToAll": "सभी को चार्ट दिखाएं",
+    "average": "औसत"
   },
   "votingResults": {
     "recommendation": "सिफारिश",
     "totalScore": "कुल स्कोर: {score}",
     "devQaProportion": "Dev / QA अनुपात",
-    "medianScores": "मध्यिका स्कोर",
+    "medianScores": "मानदंड स्कोर (माध्यिका और औसत)",
     "votesCount": "{count, plural, one {# वोट} other {# वोट}}",
     "medianValue": "टीम मध्यिका: {value}",
     "voteSpread": "वोट प्रसार",
@@ -296,7 +299,13 @@
     "max": "मैक्स",
     "hoursDaysHint": "सेंसिबल मान तक ऊपर गोल • ≈{days} कार्य दिवस",
     "daysHint": "सेंसिबल मान तक ऊपर गोल",
-    "fibonacciHint": "Fibonacci स्केल पर टीम मध्यिका"
+    "fibonacciHint": "Fibonacci स्केल पर टीम मध्यिका",
+    "medianEstimate": "माध्यिका अनुमान",
+    "averageEstimate": "औसत अनुमान",
+    "averageScore": "औसत स्कोर: {score}",
+    "average": "औसत",
+    "averageValue": "टीम का औसत: {value}",
+    "averageFibonacciHint": "औसत से स्केल पर पूर्णांकित"
   },
   "estimationToast": {
     "started": "अनुमान शुरू हुआ",

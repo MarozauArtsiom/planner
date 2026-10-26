@@ -190,7 +190,9 @@
     "waitingTeamTitle": "Oczekiwanie na zespół",
     "waitingTeamDesc": "Twój głos został zapisany. Czekamy na pozostałych uczestników.",
     "of": "z",
-    "voted": "zagłosowało"
+    "voted": "zagłosowało",
+    "medianSp": "Mediana: {sp} SP",
+    "averageSp": "Średnia: {sp} SP"
   },
   "ticketForm": {
     "externalIdPlaceholder": "ID (PROJ-123)",
@@ -281,13 +283,14 @@
     "legendMedian": "Mediana",
     "legendRecommended": "Rekomendacja",
     "legendOutlier": "Odstający",
-    "showToAll": "Pokaż wykres wszystkim"
+    "showToAll": "Pokaż wykres wszystkim",
+    "average": "Średnia"
   },
   "votingResults": {
     "recommendation": "Rekomendacja",
     "totalScore": "Łączny wynik: {score}",
     "devQaProportion": "Proporcja Dev / QA",
-    "medianScores": "Wyniki mediany",
+    "medianScores": "Wyniki kryteriów (mediana i średnia)",
     "votesCount": "{count, plural, one {# głos} few {# głosy} many {# głosów} other {# głosów}}",
     "medianValue": "Mediana zespołu: {value}",
     "voteSpread": "Rozrzut głosów",
@@ -296,7 +299,13 @@
     "max": "Maks",
     "hoursDaysHint": "Zaokrąglone w górę do sensownej wartości • ≈{days} dni roboczych",
     "daysHint": "Zaokrąglone w górę do sensownej wartości",
-    "fibonacciHint": "Mediana zespołu na skali Fibonacciego"
+    "fibonacciHint": "Mediana zespołu na skali Fibonacciego",
+    "medianEstimate": "Ocena medianowa",
+    "averageEstimate": "Ocena średnia",
+    "averageScore": "Średni wynik: {score}",
+    "average": "Średnia",
+    "averageValue": "Średnia zespołu: {value}",
+    "averageFibonacciHint": "Zaokrąglono do skali ze średniej"
   },
   "estimationToast": {
     "started": "Estymacja rozpoczęta",

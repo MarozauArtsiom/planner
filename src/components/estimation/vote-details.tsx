@@ -182,6 +182,7 @@ function CompositeView({
         <VoteDistributionChart
           votes={chartVotes}
           median={results.totalScore}
+          average={results.meanTotalScore}
           unit=""
           headerSlot={
             showToggle && projectId ? (
@@ -261,6 +262,7 @@ function SimpleView({
           votes={chartVotes}
           shape={estimationConfig?.shape}
           median={results.medianValue}
+          average={results.averageValue}
           recommended={results.roundedValue}
           unit={unit}
           headerSlot={
@@ -286,6 +288,7 @@ function SimpleView({
             votes={votes}
             bounds={bounds}
             median={results.medianValue}
+            average={results.averageValue}
             isSM={isSM}
             unit={unit}
           />
@@ -390,31 +393,50 @@ function CompositeTable({
           );
         })}
       </tbody>
-      {isSM && (
-        <tfoot>
-          <tr className="border-t-2 border-zinc-200 dark:border-zinc-700">
-            <td className="py-2 pr-3 text-sm font-bold text-zinc-700 dark:text-zinc-300">
-              {t("median")}
-            </td>
-            {COMPOSITE_COLUMNS.map((c) => {
-              const medianMap: Record<string, number> = {
-                devEffort: results.avgDevEffort,
-                qaEffort: results.avgQaEffort,
-                risk: results.avgRisk,
-                uncertainty: results.avgUncertainty,
-                totalScore: results.totalScore,
-              };
-              return (
-                <td key={c.key} className="py-2 px-1.5 text-center">
-                  <span className="inline-flex h-6 min-w-[2rem] items-center justify-center rounded bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                    {medianMap[c.key]}
-                  </span>
-                </td>
-              );
-            })}
-          </tr>
-        </tfoot>
-      )}
+      <tfoot>
+        <tr className="border-t-2 border-zinc-200 dark:border-zinc-700">
+          <td className="py-2 pr-3 text-sm font-bold text-zinc-700 dark:text-zinc-300">
+            {t("median")}
+          </td>
+          {COMPOSITE_COLUMNS.map((c) => {
+            const medianMap: Record<string, number> = {
+              devEffort: results.avgDevEffort,
+              qaEffort: results.avgQaEffort,
+              risk: results.avgRisk,
+              uncertainty: results.avgUncertainty,
+              totalScore: results.totalScore,
+            };
+            return (
+              <td key={c.key} className="py-2 px-1.5 text-center">
+                <span className="inline-flex h-6 min-w-[2rem] items-center justify-center rounded bg-blue-100 px-1.5 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  {medianMap[c.key]}
+                </span>
+              </td>
+            );
+          })}
+        </tr>
+        <tr className="border-t border-zinc-100 dark:border-zinc-800">
+          <td className="py-2 pr-3 text-sm font-bold text-zinc-700 dark:text-zinc-300">
+            {t("average")}
+          </td>
+          {COMPOSITE_COLUMNS.map((c) => {
+            const meanMap: Record<string, number> = {
+              devEffort: results.meanDevEffort,
+              qaEffort: results.meanQaEffort,
+              risk: results.meanRisk,
+              uncertainty: results.meanUncertainty,
+              totalScore: results.meanTotalScore,
+            };
+            return (
+              <td key={c.key} className="py-2 px-1.5 text-center">
+                <span className="inline-flex h-6 min-w-[2rem] items-center justify-center rounded bg-indigo-100 px-1.5 text-xs font-bold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                  {meanMap[c.key]}
+                </span>
+              </td>
+            );
+          })}
+        </tr>
+      </tfoot>
     </table>
   );
 }
@@ -427,12 +449,14 @@ function SimpleTable({
   votes,
   bounds,
   median,
+  average,
   isSM,
   unit,
 }: {
   votes: IndividualVote[];
   bounds: { lower: number; upper: number } | null;
   median: number;
+  average: number;
   isSM: boolean;
   unit: string;
 }) {
@@ -493,20 +517,28 @@ function SimpleTable({
           );
         })}
       </tbody>
-      {isSM && (
-        <tfoot>
-          <tr className="border-t-2 border-zinc-200 dark:border-zinc-700">
-            <td className="py-2 pr-3 text-sm font-bold text-zinc-700 dark:text-zinc-300">
-              {t("median")}
-            </td>
-            <td className="py-2 px-1.5 text-right">
-              <span className="inline-flex h-6 min-w-[2rem] items-center justify-center rounded bg-blue-100 px-1.5 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                {fmt(median)}
-              </span>
-            </td>
-          </tr>
-        </tfoot>
-      )}
+      <tfoot>
+        <tr className="border-t-2 border-zinc-200 dark:border-zinc-700">
+          <td className="py-2 pr-3 text-sm font-bold text-zinc-700 dark:text-zinc-300">
+            {t("median")}
+          </td>
+          <td className="py-2 px-1.5 text-right">
+            <span className="inline-flex h-6 min-w-[2rem] items-center justify-center rounded bg-blue-100 px-1.5 text-xs font-bold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+              {fmt(median)}
+            </span>
+          </td>
+        </tr>
+        <tr className="border-t border-zinc-100 dark:border-zinc-800">
+          <td className="py-2 pr-3 text-sm font-bold text-zinc-700 dark:text-zinc-300">
+            {t("average")}
+          </td>
+          <td className="py-2 px-1.5 text-right">
+            <span className="inline-flex h-6 min-w-[2rem] items-center justify-center rounded bg-indigo-100 px-1.5 text-xs font-bold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+              {fmt(average)}
+            </span>
+          </td>
+        </tr>
+      </tfoot>
     </table>
   );
 }
