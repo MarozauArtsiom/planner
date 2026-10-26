@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-26 (Epic 12: Sprint Retro Module & Agile Ecosystem Redesign)
+
+Интеграция модуля **Sprint Retro** и редизайн главной страницы в рамках единой Agile-экосистемы (**Planning Poker + Sprint Gantt + Sprint Retro**).
+
+- **feat(db):** Prisma-схема расширена моделями `RetroBoard`, `RetroColumn`, `RetroCardGroup`, `RetroCard`, `RetroVote`, `RetroActionItem`, `RetroParticipant` со связями к `Project`, опциональному `Sprint`, `Ticket` и `User`. Миграция `20261025222011_add_retro_module`.
+- **feat(retro/core):** `src/lib/retro.ts` — 6 шаблонов ретроспектив (`WENT_WELL_TO_IMPROVE`, `START_STOP_CONTINUE`, `MAD_SAD_GLAD`, `FOUR_LS`, `SAILBOAT`, `CUSTOM`), 5 фаз фасилитации (`COLLECT`, `GROUP`, `VOTE`, `DISCUSS`, `ACTIONS`, `COMPLETED`), цветовая палитра колонок и серверная маскировка приватного ввода.
+- **feat(retro/actions):** `src/app/actions/retro.ts` — полный набор Server Actions для управления досками, фазами, таймером, колонками, карточками, группами, голосами и Action Items.
+- **feat(retro/api):** Polling API `src/app/api/retro/board/route.ts` и `src/app/api/retro/active/route.ts` с поддержкой маскировки текста до раскрытия, анонимного режима, отслеживания онлайн-присутствия (`lastSeenAt`) и индикатора печати (`isTyping`).
+- **feat(retro/board):** `src/components/retro/retro-board-view.tsx` — интерактивная ретро-доска с фасилитацией по 5 фазам, синхронным таймером с аудиосигналом (`Web Audio API`), Drag-and-Drop группировкой карточек (`@dnd-kit`), Dot Voting, выделением карточки в фокус команды и экспортом в Markdown/CSV.
+- **feat(retro/bridge):** Блок Carry-Over Action Items для контроля договоренностей прошлых ретроспектив и 1-клик конвертация Action Item в `Ticket` бэклога или спринта. Шторка контекста спринта и уведомление `RetroToast`.
+- **feat(retro/access):** Обновлен `src/proxy.ts` для гостевого входа по ссылке/QR (`/retro/[token]`) без пароля. Созданы хабы `/retro` и `/project/[id]/retro`.
+- **feat(landing):** `src/components/landing-page.tsx` — интерактивное 3-вкладочное превью `EcosystemLivePreview` (Poker / Gantt / Retro), секция 3 столпов `ThreePillarsSection` и 4-шаговый замкнутый цикл `ClosedLoopSection`.
+- **feat(dashboard):** `src/app/page.tsx` — виджет открытых Action Items с ретро, навигация на `/retro` и быстрые кнопки 3 модулей на карточках проектов.
+- **feat(i18n):** Полная локализация всех 754 ключей на 7 языках (`ru`, `en`, `be`, `uk`, `pl`, `es`, `hi`) с валидацией паритета.
+
 ## 2026-06-01 (Landing redesign v3 — больше анимаций и живой preview)
 
 Landing получил **scroll-reveal анимации**, **counter-up в Metrics**, **cycling Live Preview** (демо «живёт само» меняя данные каждые 5 сек), pulse-glow на primary CTA, dot-grid в hero.
