@@ -17,11 +17,16 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  votes            Vote[]
-  ticketAssignments TicketAssignment[]
-  timeOffs         TimeOff[]
-  ownedProjects    Project[]       @relation("OwnedProjects")
-  memberships      ProjectMember[]
+  votes               Vote[]
+  ticketAssignments   TicketAssignment[]
+  timeOffs            TimeOff[]
+  ownedProjects       Project[]          @relation("OwnedProjects")
+  memberships         ProjectMember[]
+  createdRetros       RetroBoard[]       @relation("CreatedRetros")
+  retroCards          RetroCard[]
+  retroVotes          RetroVote[]
+  assignedRetroActions RetroActionItem[] @relation("AssignedRetroActions")
+  retroParticipations RetroParticipant[]
 }
 
 model Project {
@@ -57,6 +62,8 @@ model Project {
   tickets            Ticket[]
   estimationSessions EstimationSession[]
   spScaleItems       SpScaleItem[]
+  retroBoards        RetroBoard[]
+  retroActionItems   RetroActionItem[]
 }
 
 model ProjectMember {
@@ -97,6 +104,7 @@ model Sprint {
   estimationSessions EstimationSession[]
   tickets            Ticket[]
   activeInProjects   Project[]           @relation("ActiveSprint")
+  retroBoards        RetroBoard[]
 }
 
 model Ticket {
@@ -120,6 +128,7 @@ model Ticket {
   votes              Vote[]
   ticketAssignments  TicketAssignment[]
   estimationSessions EstimationSession[] @relation("ActiveTicket")
+  retroActionItem    RetroActionItem?
 }
 
 model EstimationSession {
@@ -198,4 +207,149 @@ model SpScaleItem {
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, value])
+}
+
+model RetroBoard {
+  id                   String    @id @default(cuid())
+  title                String
+  inviteToken          String    @unique @default(cuid())
+  template             String    @default("WENT_WELL_TO_IMPROVE")
+  // "WENT_WELL_TO_IMPROVE" | "START_STOP_CONTINUE" | "MAD_SAD_GLAD" | "FOUR_LS" | "SAILBOAT" | "CUSTOM"
+
+  phase                String    @default("COLLECT")
+  // "COLLECT" | "GROUP" | "VOTE" | "DISCUSS" | "ACTIONS" | "COMPLETED"
+
+  isAnonymous          Boolean   @default(false)
+  hideCardsUntilReveal Boolean   @default(true)
+  cardsRevealed        Boolean   @default(false)
+  maxVotesPerUser      Int       @default(5)
+  hideVotesUntilDone   Boolean   @default(true)
+
+  timerEndsAt          DateTime?
+  timerDurationSec     Int?
+  focusedItemId        String?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  completedAt          DateTime?
+
+  projectId            String
+  project              Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  sprintId             String?
+  sprint               Sprint?   @relation(fields: [sprintId], references: [id], onDelete: SetNull)
+
+  createdById          String
+  createdBy            User      @relation("CreatedRetros", fields: [createdById], references: [id])
+
+  columns              RetroColumn[]
+  cards                RetroCard[]
+  groups               RetroCardGroup[]
+  actionItems          RetroActionItem[]
+  participants         RetroParticipant[]
+}
+
+model RetroColumn {
+  id       String     @id @default(cuid())
+  title    String
+  color    String     @default("emerald") // "emerald" | "amber" | "rose" | "blue" | "violet" | "zinc"
+  position Int
+
+  boardId  String
+  board    RetroBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  cards    RetroCard[]
+  groups   RetroCardGroup[]
+}
+
+model RetroCardGroup {
+  id        String      @id @default(cuid())
+  title     String
+  position  Int
+  createdAt DateTime    @default(now())
+
+  boardId   String
+  board     RetroBoard  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  columnId  String
+  column    RetroColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  cards     RetroCard[]
+  votes     RetroVote[]
+}
+
+model RetroCard {
+  id        String          @id @default(cuid())
+  content   String
+  position  Int
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  boardId   String
+  board     RetroBoard      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  columnId  String
+  column    RetroColumn     @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  groupId   String?
+  group     RetroCardGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  authorId  String
+  author    User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  votes     RetroVote[]
+}
+
+model RetroVote {
+  id        String          @id @default(cuid())
+  weight    Int             @default(1)
+  createdAt DateTime        @default(now())
+
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  cardId    String?
+  card      RetroCard?      @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  groupId   String?
+  group     RetroCardGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+  @@unique([userId, groupId])
+}
+
+model RetroActionItem {
+  id         String     @id @default(cuid())
+  title      String
+  status     String     @default("OPEN") // "OPEN" | "DONE"
+  dueDate    DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  boardId    String
+  board      RetroBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  projectId  String
+  project    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  assigneeId String?
+  assignee   User?      @relation("AssignedRetroActions", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  ticketId   String?    @unique
+  ticket     Ticket?    @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+}
+
+model RetroParticipant {
+  id         String     @id @default(cuid())
+  joinedAt   DateTime   @default(now())
+  lastSeenAt DateTime   @default(now())
+  isTyping   Boolean    @default(false)
+
+  boardId    String
+  board      RetroBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, userId])
 }
