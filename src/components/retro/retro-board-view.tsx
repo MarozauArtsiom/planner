@@ -426,6 +426,7 @@ export function RetroBoardView({ inviteToken }: { inviteToken: string }) {
                   <span className="inline-flex items-center gap-1 font-medium text-emerald-600 animate-pulse dark:text-emerald-400">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     {t("typingIndicator", {
+                      count: typingParticipants.length,
                       names: typingParticipants.map((p) => p.name).join(", "),
                     })}
                   </span>
@@ -535,7 +536,6 @@ export function RetroBoardView({ inviteToken }: { inviteToken: string }) {
                         : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400"
                   } ${!isFacilitator ? "cursor-default" : "cursor-pointer"}`}
                 >
-                  <span className="text-[10px] opacity-75">{idx + 1}.</span>
                   <span>{t(`phase_${ph}` as "phase_COLLECT")}</span>
                 </button>
               );
@@ -669,13 +669,15 @@ export function RetroBoardView({ inviteToken }: { inviteToken: string }) {
             <div className="flex items-center justify-between gap-2 pb-3">
               <div>
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-50">
-                  {t("sprintContextTitle")}: {sprintContext.name}
+                  {t("sprintContextTitle", { name: sprintContext.name })}
                 </h3>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {new Date(sprintContext.startDate).toLocaleDateString()} —{" "}
                   {new Date(sprintContext.endDate).toLocaleDateString()} ·{" "}
-                  {sprintContext.ticketCount} {t("sprintTicketsCount")} ·{" "}
-                  {sprintContext.totalSp} SP
+                  {t("sprintTicketsCount", {
+                    count: sprintContext.ticketCount,
+                  })}{" "}
+                  · {sprintContext.totalSp} SP
                 </p>
               </div>
               <button
@@ -953,7 +955,7 @@ export function RetroBoardView({ inviteToken }: { inviteToken: string }) {
             {!currentUser.isGuest && sprints.length > 0 && (
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-zinc-500 dark:text-zinc-400">
-                  {t("convertTargetLabel")}:
+                  {t("convertTargetLabel")}
                 </span>
                 <select
                   value={ticketTargetSprint}
@@ -1063,8 +1065,11 @@ export function RetroBoardView({ inviteToken }: { inviteToken: string }) {
                           )}
                           {item.dueDate && (
                             <span>
-                              {t("dueLabel")}:{" "}
-                              {new Date(item.dueDate).toLocaleDateString()}
+                              {t("dueLabel", {
+                                date: new Date(
+                                  item.dueDate,
+                                ).toLocaleDateString(),
+                              })}
                             </span>
                           )}
                         </div>
@@ -1075,7 +1080,7 @@ export function RetroBoardView({ inviteToken }: { inviteToken: string }) {
                       {item.ticketId ? (
                         <Link
                           href={`/project/${board.projectId}`}
-                          className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300"
+                          className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:hover:bg-emerald-900/50"
                         >
                           ✓ {t("linkedTicketBadge")}
                         </Link>
@@ -1342,7 +1347,7 @@ function RetroColumnCard({
                 handleCreateCard(e);
               }
             }}
-            placeholder={t("addCardPlaceholder")}
+            placeholder={t("addCardPlaceholder", { column: column.title })}
             className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500 focus:bg-white focus:outline-none dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-100 dark:focus:bg-zinc-800"
           />
           <div className="mt-1.5 flex items-center justify-between">
@@ -1493,7 +1498,7 @@ function RetroGroupBox({
         ) : (
           <div className="flex min-w-0 items-center gap-1.5">
             <Badge tone="info" size="xs">
-              {t("groupBadge")}
+              {t("groupBadge", { count: cards.length })}
             </Badge>
             <button
               type="button"
