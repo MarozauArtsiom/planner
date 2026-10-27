@@ -287,7 +287,7 @@ export async function updateSpScale(projectId: string, items: SpScaleEntry[]) {
   if (new Set(values).size !== values.length) return { error: t("spValuesDuplicate") };
 
   for (const item of items) {
-    if (item.value < 1) return { error: t("spMinOne") };
+    if (item.value < 0) return { error: t("spMinOne") };
     if (item.durationDays < 1) return { error: t("durationMinOne") };
     if (!item.label.trim()) return { error: t("descriptionRequired") };
   }
@@ -313,6 +313,10 @@ export async function resetSpScale(projectId: string) {
   }
 
   await prisma.$transaction([
+    prisma.project.update({
+      where: { id: projectId },
+      data: { customShapeJson: null },
+    }),
     prisma.spScaleItem.deleteMany({ where: { projectId } }),
     ...DEFAULT_SP_SCALE.map((item) =>
       prisma.spScaleItem.create({

@@ -255,8 +255,9 @@ function ProjectSettingsContent() {
       draftScale.map((item, i) => {
         if (i !== index) return item;
         if (field === "label") return { ...item, label: raw };
-        const num = parseInt(raw) || 0;
-        return { ...item, [field]: Math.max(field === "value" ? 1 : 1, num) };
+        const parsed = parseInt(raw, 10);
+        const num = Number.isNaN(parsed) ? 0 : parsed;
+        return { ...item, [field]: Math.max(field === "value" ? 0 : 1, num) };
       }),
     );
   };
@@ -521,7 +522,7 @@ function ProjectSettingsContent() {
                 </div>
                 {draftScale.map((item, i) => (
                   <div key={i} className="grid grid-cols-[60px_1fr_80px_32px] gap-2 items-center">
-                    <input type="number" min={1} value={item.value} onChange={(e) => handleScaleChange(i, "value", e.target.value)} className={`${INPUT_CLASS} text-center`} />
+                    <input type="number" min={0} value={item.value} onChange={(e) => handleScaleChange(i, "value", e.target.value)} className={`${INPUT_CLASS} text-center`} />
                     <input type="text" value={item.label} onChange={(e) => handleScaleChange(i, "label", e.target.value)} placeholder={t("descriptionPlaceholder")} className={INPUT_CLASS} />
                     <input type="number" min={1} value={item.durationDays} onChange={(e) => handleScaleChange(i, "durationDays", e.target.value)} className={`${INPUT_CLASS} text-center`} />
                     <button type="button" onClick={() => handleRemoveScaleItem(i)} disabled={draftScale.length <= 1} className="flex h-8 w-8 items-center justify-center rounded-md text-zinc-400 transition-colors hover:text-red-500 disabled:opacity-30">

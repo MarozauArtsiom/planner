@@ -274,7 +274,9 @@ export function QuickRoomBoard({ projectId, accessCode }: Props) {
                     key={`${state.activeTicket.id}-${state.estimationConfig.method}`}
                     projectId={projectId}
                     config={state.estimationConfig}
+                    spScale={state.spScale}
                     onSuccess={handleVoteSuccess}
+                    onCustomValueChange={refresh}
                   />
                 </div>
               )}

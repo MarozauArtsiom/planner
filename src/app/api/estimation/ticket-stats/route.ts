@@ -5,6 +5,7 @@ import {
   calculateEstimation,
   calculateSimpleEstimation,
   isEstimationMethod,
+  parseCustomShape,
   type EstimationMethod,
 } from "@/lib/estimation-engine";
 
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
         estimationMethod: true,
         workingHoursPerDay: true,
         showDistributionToAll: true,
+        customShapeJson: true,
       },
     });
     const method: EstimationMethod = isEstimationMethod(project?.estimationMethod)
@@ -56,6 +58,7 @@ export async function GET(request: NextRequest) {
       : "COMPOSITE_SP";
     const workingHoursPerDay = project?.workingHoursPerDay ?? 8;
     const showDistributionToAll = project?.showDistributionToAll ?? false;
+    const customValues = parseCustomShape(project?.customShapeJson);
 
     const votes = await prisma.vote.findMany({
       where: { ticketId },
@@ -84,7 +87,12 @@ export async function GET(request: NextRequest) {
             risk: v.risk as number,
             uncertainty: v.uncertainty as number,
           }));
-        const spValues = spScaleItems.map((s) => s.value);
+        const spValues = Array.from(
+          new Set([
+            ...spScaleItems.map((s) => s.value),
+            ...customValues.filter((v) => Number.isInteger(v)),
+          ]),
+        );
         const calc = calculateEstimation(
           compositeVotes,
           spValues.length > 0 ? spValues : undefined,
@@ -99,6 +107,7 @@ export async function GET(request: NextRequest) {
           method,
           spScaleItems,
           workingHoursPerDay,
+          customValues,
         );
         results = { ...calc, voteCount: votes.length };
       }

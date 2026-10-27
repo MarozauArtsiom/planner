@@ -92,6 +92,8 @@ export interface EstimationConfig {
   method: EstimationMethod;
   workingHoursPerDay: number;
   shape: number[];
+  /** Пользовательские оценки, добавленные для этой комнаты/проекта. */
+  customValues?: number[];
   /** Показывать ли гистограмму распределения всем участникам (по умолчанию false — только SM/host). */
   showDistributionToAll: boolean;
 }

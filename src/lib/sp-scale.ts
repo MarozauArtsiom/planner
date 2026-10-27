@@ -5,6 +5,7 @@ export interface SpScaleEntry {
 }
 
 export const DEFAULT_SP_SCALE: SpScaleEntry[] = [
+  { value: 0, label: "Не требует усилий", durationDays: 1 },
   { value: 1, label: "Меньше дня работы", durationDays: 2 },
   { value: 2, label: "Полспринта", durationDays: 3 },
   { value: 3, label: "Полная неделя", durationDays: 5 },
@@ -24,6 +25,7 @@ export function getSpDurationDays(
 }
 
 function fallbackDuration(sp: number): number {
+  if (sp <= 0) return 1;
   if (sp <= 1) return 2;
   if (sp <= 2) return 3;
   if (sp <= 3) return 5;

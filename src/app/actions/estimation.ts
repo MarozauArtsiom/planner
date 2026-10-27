@@ -10,8 +10,10 @@ import {
   calculateSimpleEstimation,
   getShapeForMethod,
   isEstimationMethod,
+  parseCustomShape,
   type EstimationMethod,
 } from "@/lib/estimation-engine";
+import { DEFAULT_SP_SCALE } from "@/lib/sp-scale";
 
 async function requireUser() {
   const userId = await getSession();
@@ -95,10 +97,10 @@ export async function setActiveTicket(projectId: string, ticketId: string) {
   return { success: true };
 }
 
-const VALID_DEV_EFFORT = [1, 2, 4, 6];
-const VALID_QA_EFFORT = [1, 2, 4];
-const VALID_RISK = [0, 1, 2];
-const VALID_UNCERTAINTY = [0, 1, 2];
+const VALID_DEV_EFFORT = [0, 1, 2, 4, 6];
+const VALID_QA_EFFORT = [0, 1, 2, 4];
+const VALID_RISK = [0, 1, 2, 3];
+const VALID_UNCERTAINTY = [0, 1, 2, 3];
 
 async function getProjectMethod(projectId: string): Promise<EstimationMethod> {
   const project = await prisma.project.findUnique({
@@ -117,7 +119,11 @@ export async function submitVote(projectId: string, formData: FormData) {
   // в Quick-комнатах любой member может голосовать (роли не используются).
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { isQuick: true },
+    select: {
+      isQuick: true,
+      customShapeJson: true,
+      spScaleItems: { select: { value: true } },
+    },
   });
   if (!project?.isQuick && !membership.role) {
     return { error: t("onlyTeamCanVote") };
@@ -165,10 +171,16 @@ export async function submitVote(projectId: string, formData: FormData) {
   // Single-value методы: FIBONACCI_SP / HOURS / DAYS
   const raw = formData.get("singleValue") as string | null;
   const singleValue = raw != null ? parseFloat(raw) : NaN;
-  if (!Number.isFinite(singleValue) || singleValue <= 0) {
+  if (!Number.isFinite(singleValue) || singleValue < 0) {
     return { error: t("invalidCriteriaValues") };
   }
-  const shape = getShapeForMethod(method);
+  const customValues = [
+    ...parseCustomShape(project?.customShapeJson),
+    ...(method === "FIBONACCI_SP"
+      ? (project?.spScaleItems.map((s) => s.value) ?? [])
+      : []),
+  ];
+  const shape = getShapeForMethod(method, customValues);
   if (shape.length > 0 && !shape.includes(singleValue)) {
     return { error: t("invalidCriteriaValues") };
   }
@@ -224,12 +236,17 @@ export async function acceptEstimation(projectId: string, overrideSp?: number) {
 
   const project = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { estimationMethod: true, workingHoursPerDay: true },
+    select: {
+      estimationMethod: true,
+      workingHoursPerDay: true,
+      customShapeJson: true,
+    },
   });
   const method: EstimationMethod = isEstimationMethod(project?.estimationMethod)
     ? project.estimationMethod
     : "COMPOSITE_SP";
   const workingHoursPerDay = project?.workingHoursPerDay ?? 8;
+  const customValues = parseCustomShape(project?.customShapeJson);
 
   const votes = await prisma.vote.findMany({
     where: { ticketId: session.activeTicketId },
@@ -258,12 +275,17 @@ export async function acceptEstimation(projectId: string, overrideSp?: number) {
         risk: v.risk as number,
         uncertainty: v.uncertainty as number,
       }));
-    const spValues = spScaleItems.map((s) => s.value);
+    const spValues = Array.from(
+      new Set([
+        ...spScaleItems.map((s) => s.value),
+        ...customValues.filter((v) => Number.isInteger(v)),
+      ]),
+    );
     const result = calculateEstimation(
       compositeVotes,
       spValues.length > 0 ? spValues : undefined,
     );
-    sp = overrideSp && overrideSp > 0 ? overrideSp : result.recommendedSp;
+    sp = overrideSp != null && overrideSp >= 0 ? overrideSp : result.recommendedSp;
     devProportion = result.devProportion;
   } else {
     const simpleVotes = votes
@@ -274,14 +296,15 @@ export async function acceptEstimation(projectId: string, overrideSp?: number) {
       method,
       spScaleItems,
       workingHoursPerDay,
+      customValues,
     );
-    sp = overrideSp && overrideSp > 0 ? overrideSp : result.recommendedSp;
+    sp = overrideSp != null && overrideSp >= 0 ? overrideSp : result.recommendedSp;
   }
 
   await prisma.ticket.update({
     where: { id: session.activeTicketId },
     data: {
-      storyPoints: sp,
+      storyPoints: Math.round(sp),
       ...(devProportion != null && { devEffortProportion: devProportion }),
     },
   });
@@ -366,4 +389,124 @@ export async function deleteTicket(projectId: string, ticketId: string) {
 
   await prisma.ticket.delete({ where: { id: ticketId } });
   return { success: true };
+}
+
+/**
+ * Добавить своё значение оценки в комнату / проект.
+ * Доступно любому участнику комнаты, чтобы он мог вставить новую оценку
+ * и все участники комнаты сразу увидели её и могли проголосовать.
+ */
+export async function addCustomEstimationValue(
+  projectId: string,
+  rawValue: number,
+  label?: string,
+) {
+  const t = await getTranslations("errors");
+  await requireProjectMember(projectId);
+
+  const value = Math.round(Number(rawValue) * 100) / 100;
+  if (!Number.isFinite(value) || value < 0 || value > 10000) {
+    return { error: t("invalidCriteriaValues") };
+  }
+
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: {
+      isQuick: true,
+      estimationMethod: true,
+      customShapeJson: true,
+    },
+  });
+  if (!project) return { error: t("noProjectAccess") };
+
+  const currentCustom = parseCustomShape(project.customShapeJson);
+  const nextCustom = Array.from(new Set([...currentCustom, value])).sort(
+    (a, b) => a - b,
+  );
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { customShapeJson: JSON.stringify(nextCustom) },
+  });
+
+  if (!project.isQuick && Number.isInteger(value) && value >= 0) {
+    const existing = await prisma.spScaleItem.findUnique({
+      where: { projectId_value: { projectId, value } },
+    });
+    if (!existing) {
+      await prisma.spScaleItem.create({
+        data: {
+          projectId,
+          value,
+          label: label?.trim() || `${value} SP`,
+          durationDays: Math.max(1, Math.min(30, value || 1)),
+        },
+      });
+    }
+  }
+
+  const method: EstimationMethod = isEstimationMethod(project.estimationMethod)
+    ? project.estimationMethod
+    : "COMPOSITE_SP";
+
+  return {
+    success: true,
+    value,
+    customValues: nextCustom,
+    shape: getShapeForMethod(method, nextCustom),
+  };
+}
+
+/**
+ * Удалить пользовательское значение оценки из комнаты / проекта.
+ */
+export async function removeCustomEstimationValue(
+  projectId: string,
+  rawValue: number,
+) {
+  const t = await getTranslations("errors");
+  await requireProjectMember(projectId);
+
+  const value = Math.round(Number(rawValue) * 100) / 100;
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: {
+      isQuick: true,
+      estimationMethod: true,
+      customShapeJson: true,
+    },
+  });
+  if (!project) return { error: t("noProjectAccess") };
+
+  const currentCustom = parseCustomShape(project.customShapeJson);
+  const nextCustom = currentCustom.filter((v) => v !== value);
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: {
+      customShapeJson: nextCustom.length > 0 ? JSON.stringify(nextCustom) : null,
+    },
+  });
+
+  const isDefaultSp = DEFAULT_SP_SCALE.some((s) => s.value === value);
+  if (!project.isQuick && Number.isInteger(value) && !isDefaultSp) {
+    const totalScaleCount = await prisma.spScaleItem.count({
+      where: { projectId },
+    });
+    if (totalScaleCount > 1) {
+      await prisma.spScaleItem.deleteMany({
+        where: { projectId, value },
+      });
+    }
+  }
+
+  const method: EstimationMethod = isEstimationMethod(project.estimationMethod)
+    ? project.estimationMethod
+    : "COMPOSITE_SP";
+
+  return {
+    success: true,
+    customValues: nextCustom,
+    shape: getShapeForMethod(method, nextCustom),
+  };
 }

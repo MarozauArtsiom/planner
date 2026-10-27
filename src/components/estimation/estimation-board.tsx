@@ -25,6 +25,7 @@ import {
   acceptEstimation,
   restartVoting,
   deleteTicket,
+  addCustomEstimationValue,
 } from "@/app/actions/estimation";
 import { PageShell, LoadingScreen } from "@/components/ui";
 import { RetroToast } from "@/components/retro-toast";
@@ -418,7 +419,9 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                             key={`${state.activeTicket.id}-${state.estimationConfig.method}`}
                             projectId={projectId}
                             config={state.estimationConfig}
+                            spScale={state.spScale}
                             onSuccess={handleVoteSuccess}
+                            onCustomValueChange={refresh}
                           />
                         </div>
                       )}
@@ -440,6 +443,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                       {state.individualVotes && state.individualVotes.length > 0 && <div className="mt-5"><VoteDetails votes={state.individualVotes} results={state.results} isSM={isSM} estimationConfig={state.estimationConfig} projectId={projectId} onRefresh={refresh} /></div>}
                       {isSM && (
                         <SpAcceptPanel
+                          projectId={projectId}
                           recommendedSp={state.results.recommendedSp}
                           averageSp={state.results.averageSp}
                           selectedSp={selectedSp}
@@ -448,6 +452,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                           onRestart={handleRestartVoting}
                           isPending={isPending}
                           spScale={state.spScale}
+                          onCustomValueChange={refresh}
                         />
                       )}
                     </>
@@ -481,6 +486,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                         <div className="border-t border-zinc-200 pt-4 dark:border-zinc-700">
                           {ticketStats.results && (
                             <SpAcceptPanel
+                              projectId={projectId}
                               recommendedSp={ticketStats.results.recommendedSp}
                               averageSp={ticketStats.results.averageSp}
                               selectedSp={statsSp}
@@ -496,6 +502,7 @@ export function EstimationBoard({ projectId }: { projectId: string }) {
                               }}
                               isPending={isPending}
                               spScale={state.spScale}
+                              onCustomValueChange={refresh}
                             />
                           )}
                           {!ticketStats.results && (
@@ -601,9 +608,10 @@ function SMVotingPanel({ votes, voterStatus, onReveal, isPending }: { votes: Vot
   );
 }
 
-const DEFAULT_SP_OPTIONS = [1, 2, 3, 5, 8, 13];
+const DEFAULT_SP_OPTIONS = [0, 1, 2, 3, 5, 8, 13];
 
 function SpAcceptPanel({
+  projectId,
   recommendedSp,
   averageSp,
   selectedSp,
@@ -612,7 +620,9 @@ function SpAcceptPanel({
   onRestart,
   isPending,
   spScale,
+  onCustomValueChange,
 }: {
+  projectId: string;
   recommendedSp: number;
   averageSp: number;
   selectedSp: number | null;
@@ -621,10 +631,43 @@ function SpAcceptPanel({
   onRestart: () => void;
   isPending: boolean;
   spScale?: SpScaleOption[];
+  onCustomValueChange?: () => Promise<void> | void;
 }) {
   const t = useTranslations("estimation");
+  const tv = useTranslations("votingForm");
+  const [showAddInput, setShowAddInput] = useState(false);
+  const [customInput, setCustomInput] = useState("");
+  const [isCustomPending, startCustomTransition] = useTransition();
+  const [localOptions, setLocalOptions] = useState<SpScaleOption[]>([]);
+
   const activeSp = selectedSp ?? recommendedSp;
-  const options = spScale && spScale.length > 0 ? spScale : DEFAULT_SP_OPTIONS.map((v) => ({ value: v, label: "" }));
+  const baseOptions =
+    spScale && spScale.length > 0
+      ? spScale
+      : DEFAULT_SP_OPTIONS.map((v) => ({ value: v, label: "" }));
+
+  const mergedMap = new Map<number, string>();
+  for (const opt of baseOptions) mergedMap.set(opt.value, opt.label);
+  for (const opt of localOptions) {
+    if (!mergedMap.has(opt.value)) mergedMap.set(opt.value, opt.label);
+  }
+  const options = Array.from(mergedMap.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.value - b.value);
+
+  const handleAddCustomSp = () => {
+    const parsed = parseInt(customInput.trim(), 10);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1000) return;
+    setLocalOptions((prev) => [...prev, { value: parsed, label: `${parsed} SP` }]);
+    onSelect(parsed);
+    setCustomInput("");
+    setShowAddInput(false);
+
+    startCustomTransition(async () => {
+      await addCustomEstimationValue(projectId, parsed);
+      await onCustomValueChange?.();
+    });
+  };
 
   return (
     <div className="mt-6 space-y-4">
@@ -669,7 +712,61 @@ function SpAcceptPanel({
               {opt.value === averageSp && opt.value !== recommendedSp && activeSp !== opt.value && <span className="absolute -top-1 -left-1 h-2 w-2 rounded-full bg-indigo-400" title={t("averageSp", { sp: averageSp })} />}
             </button>
           ))}
+          {!showAddInput && (
+            <button
+              type="button"
+              onClick={() => setShowAddInput(true)}
+              disabled={isPending || isCustomPending}
+              className="flex flex-col items-center justify-center rounded-lg border border-dashed border-blue-300 bg-blue-50/40 px-3 py-2 text-sm font-bold text-blue-600 transition-colors hover:border-blue-400 hover:bg-blue-50 dark:border-blue-700 dark:bg-blue-950/20 dark:text-blue-400 dark:hover:bg-blue-950/40"
+              title={tv("addCustomValue")}
+            >
+              <span>+</span>
+              <span className="mt-0.5 text-[9px] font-normal leading-tight">{tv("addCustomShort")}</span>
+            </button>
+          )}
         </div>
+        {showAddInput && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              max={1000}
+              step={1}
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddCustomSp();
+                } else if (e.key === "Escape") {
+                  setShowAddInput(false);
+                }
+              }}
+              placeholder={tv("customValuePlaceholder")}
+              autoFocus
+              className="w-32 rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            />
+            <button
+              type="button"
+              onClick={handleAddCustomSp}
+              disabled={isCustomPending || !customInput.trim()}
+              className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500"
+            >
+              {isCustomPending && <ButtonSpinner className="h-3.5 w-3.5" />}
+              <span>{tv("addCustomConfirm")}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddInput(false);
+                setCustomInput("");
+              }}
+              className="rounded-lg border border-zinc-200 px-2.5 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            >
+              {tv("addCustomCancel")}
+            </button>
+          </div>
+        )}
         {activeSp !== recommendedSp && activeSp !== averageSp && (
           <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
             {t("recommendation", { sp: recommendedSp })} • {t("averageSp", { sp: averageSp })}

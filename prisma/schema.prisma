@@ -49,6 +49,8 @@ model Project {
   workingHoursPerDay    Int     @default(8)
   // Показывать гистограмму распределения всем (по умолчанию — только SM/host)
   showDistributionToAll Boolean @default(false)
+  // Пользовательские значения оценок для комнаты/проекта (JSON-массив чисел)
+  customShapeJson       String?
 
   ownerId String
   owner   User   @relation("OwnedProjects", fields: [ownerId], references: [id])

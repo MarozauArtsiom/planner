@@ -21,12 +21,27 @@ export function isEstimationMethod(value: unknown): value is EstimationMethod {
   return typeof value === "string" && ESTIMATION_METHODS.includes(value as EstimationMethod);
 }
 
-// Захардкоженные шкалы для single-value методов (Phase 2 — настраиваемые)
-export const FIBONACCI_SHAPE = [1, 2, 3, 5, 8, 13, 21];
-export const HOURS_SHAPE = [1, 2, 4, 8, 16, 24, 40];
-export const DAYS_SHAPE = [0.5, 1, 2, 3, 5, 8, 13];
+// Базовые шкалы для single-value методов (могут дополняться кастомными значениями комнаты)
+export const FIBONACCI_SHAPE = [0, 1, 2, 3, 5, 8, 13, 21];
+export const HOURS_SHAPE = [0, 1, 2, 4, 8, 16, 24, 40];
+export const DAYS_SHAPE = [0, 0.5, 1, 2, 3, 5, 8, 13];
 
-export function getShapeForMethod(method: EstimationMethod): number[] {
+export function parseCustomShape(customShapeJson?: string | null): number[] {
+  if (!customShapeJson) return [];
+  try {
+    const parsed = JSON.parse(customShapeJson);
+    if (!Array.isArray(parsed)) return [];
+    const nums = parsed
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v) && v >= 0 && v <= 10000)
+      .map((v) => Math.round(v * 100) / 100);
+    return Array.from(new Set(nums)).sort((a, b) => a - b);
+  } catch {
+    return [];
+  }
+}
+
+export function getBaseShapeForMethod(method: EstimationMethod): number[] {
   switch (method) {
     case "FIBONACCI_SP":
       return FIBONACCI_SHAPE;
@@ -37,6 +52,16 @@ export function getShapeForMethod(method: EstimationMethod): number[] {
     case "COMPOSITE_SP":
       return [];
   }
+}
+
+export function getShapeForMethod(
+  method: EstimationMethod,
+  customValues?: number[],
+): number[] {
+  const base = getBaseShapeForMethod(method);
+  if (method === "COMPOSITE_SP") return [];
+  if (!customValues || customValues.length === 0) return base;
+  return Array.from(new Set([...base, ...customValues])).sort((a, b) => a - b);
 }
 
 // =====================================================================
@@ -83,7 +108,7 @@ function mean(values: number[]): number {
   return values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
-const DEFAULT_SP_VALUES = [1, 2, 3, 5, 8, 13];
+const DEFAULT_SP_VALUES = [0, 1, 2, 3, 5, 8, 13];
 
 function scoreToSP(total: number, availableValues?: number[]): number {
   const values =
@@ -91,10 +116,19 @@ function scoreToSP(total: number, availableValues?: number[]): number {
       ? [...availableValues].sort((a, b) => a - b)
       : DEFAULT_SP_VALUES;
 
-  if (total <= 3) return values[0] ?? 1;
-  if (total <= 5) return values[Math.min(1, values.length - 1)];
-  if (total <= 8) return values[Math.min(2, values.length - 1)];
-  return values[Math.min(3, values.length - 1)];
+  if (total <= 0) {
+    return values.includes(0) ? 0 : (values[0] ?? 0);
+  }
+
+  const positiveValues = values.filter((v) => v > 0);
+  if (positiveValues.length === 0) return values[0] ?? 0;
+
+  if (total <= 3) return positiveValues[0] ?? 1;
+  if (total <= 5) return positiveValues[Math.min(1, positiveValues.length - 1)];
+  if (total <= 8) return positiveValues[Math.min(2, positiveValues.length - 1)];
+  if (total <= 11) return positiveValues[Math.min(3, positiveValues.length - 1)];
+  if (total <= 14) return positiveValues[Math.min(4, positiveValues.length - 1)];
+  return positiveValues[Math.min(5, positiveValues.length - 1)];
 }
 
 export function calculateEstimation(
@@ -226,6 +260,7 @@ function durationDaysForSimple(
   spScale: SpScaleEntry[],
   workingHoursPerDay: number,
 ): number {
+  if (roundedValue <= 0) return 0;
   if (method === "DAYS") return Math.max(1, Math.ceil(roundedValue));
   if (method === "HOURS") {
     const hpd = workingHoursPerDay > 0 ? workingHoursPerDay : 8;
@@ -249,6 +284,7 @@ function durationDaysForSimple(
  * Если таких нет — берём максимальное доступное.
  */
 function spByDurationDays(durationDays: number, spScale: SpScaleEntry[]): number {
+  if (durationDays <= 0) return 0;
   if (spScale.length === 0) {
     // fallback на DEFAULT_SP_VALUES, грубое приближение
     if (durationDays <= 2) return 1;
@@ -258,7 +294,9 @@ function spByDurationDays(durationDays: number, spScale: SpScaleEntry[]): number
     if (durationDays <= 13) return 8;
     return 13;
   }
-  const sorted = [...spScale].sort((a, b) => a.durationDays - b.durationDays);
+  const positiveScale = spScale.filter((s) => s.value > 0);
+  if (positiveScale.length === 0) return spScale[0]?.value ?? 0;
+  const sorted = [...positiveScale].sort((a, b) => a.durationDays - b.durationDays);
   for (const entry of sorted) {
     if (entry.durationDays >= durationDays) return entry.value;
   }
@@ -270,9 +308,10 @@ export function calculateSimpleEstimation(
   method: EstimationMethod,
   spScale: SpScaleEntry[] = [],
   workingHoursPerDay = 8,
+  customValues?: number[],
 ): SimpleEstimationResult {
   if (votes.length === 0) {
-    const defaultSp = spScale[0]?.value ?? 1;
+    const defaultSp = spScale[0]?.value ?? 0;
     return {
       method,
       medianValue: 0,
@@ -294,7 +333,7 @@ export function calculateSimpleEstimation(
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
 
-  const shape = getShapeForMethod(method);
+  const shape = getShapeForMethod(method, customValues);
   const roundedValue = roundUpToShape(medianValue, shape);
   const averageRoundedValue = roundUpToShape(averageValue, shape);
 
@@ -304,7 +343,10 @@ export function calculateSimpleEstimation(
     spScale,
     workingHoursPerDay,
   );
-  const recommendedSp = spByDurationDays(durationDays, spScale);
+  const recommendedSp =
+    method === "FIBONACCI_SP"
+      ? Math.round(roundedValue)
+      : spByDurationDays(durationDays, spScale);
 
   const avgDurationDays = durationDaysForSimple(
     method,
@@ -312,7 +354,10 @@ export function calculateSimpleEstimation(
     spScale,
     workingHoursPerDay,
   );
-  const averageSp = spByDurationDays(avgDurationDays, spScale);
+  const averageSp =
+    method === "FIBONACCI_SP"
+      ? Math.round(averageRoundedValue)
+      : spByDurationDays(avgDurationDays, spScale);
 
   return {
     method,
@@ -325,6 +370,6 @@ export function calculateSimpleEstimation(
     voteCount: votes.length,
     recommendedSp,
     averageSp,
-    durationDays,
+    durationDays: Math.max(1, durationDays),
   };
 }

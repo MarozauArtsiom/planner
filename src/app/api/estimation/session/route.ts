@@ -7,6 +7,7 @@ import {
   calculateSimpleEstimation,
   getShapeForMethod,
   isEstimationMethod,
+  parseCustomShape,
   type EstimationMethod,
 } from "@/lib/estimation-engine";
 
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
             estimationMethod: true,
             workingHoursPerDay: true,
             showDistributionToAll: true,
+            customShapeJson: true,
             isQuick: true,
             accessCode: true,
           },
@@ -80,6 +82,11 @@ export async function GET(request: NextRequest) {
       ? project.estimationMethod
       : "COMPOSITE_SP";
     const workingHoursPerDay = project?.workingHoursPerDay ?? 8;
+    const customValues = parseCustomShape(project?.customShapeJson);
+    const mergedShapeValues = [
+      ...customValues,
+      ...(method === "FIBONACCI_SP" ? spScaleItems.map((s) => s.value) : []),
+    ];
 
     let submittedCount = 0;
     let currentUserVoted = false;
@@ -128,7 +135,12 @@ export async function GET(request: NextRequest) {
               risk: v.risk as number,
               uncertainty: v.uncertainty as number,
             }));
-          const spValues = spScaleItems.map((s) => s.value);
+          const spValues = Array.from(
+            new Set([
+              ...spScaleItems.map((s) => s.value),
+              ...customValues.filter((v) => Number.isInteger(v)),
+            ]),
+          );
           const calc = calculateEstimation(
             compositeVotes,
             spValues.length > 0 ? spValues : undefined,
@@ -157,6 +169,7 @@ export async function GET(request: NextRequest) {
             method,
             spScaleItems,
             workingHoursPerDay,
+            mergedShapeValues,
           );
           results = { ...calc, voteCount: votes.length };
           individualVotes = votes.map((v) => ({
@@ -173,10 +186,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const spScaleForOptions = spScaleItems.map((s) => ({
-      value: s.value,
-      label: s.label,
-    }));
+    const spScaleMap = new Map<number, string>();
+    for (const s of spScaleItems) {
+      spScaleMap.set(s.value, s.label);
+    }
+    for (const cv of customValues) {
+      if (Number.isInteger(cv) && !spScaleMap.has(cv)) {
+        spScaleMap.set(cv, "");
+      }
+    }
+    const spScaleForOptions = Array.from(spScaleMap.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.value - b.value);
 
     const tickets = allTickets.map((t) => ({
       id: t.id,
@@ -212,7 +233,8 @@ export async function GET(request: NextRequest) {
       estimationConfig: {
         method,
         workingHoursPerDay,
-        shape: getShapeForMethod(method),
+        shape: getShapeForMethod(method, mergedShapeValues),
+        customValues,
         showDistributionToAll: project?.showDistributionToAll ?? false,
       },
       quickRoom: project?.isQuick

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { parseCustomShape } from "@/lib/estimation-engine";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export async function GET(
       taskCoefficient: true,
       estimationMethod: true,
       workingHoursPerDay: true,
+      customShapeJson: true,
       activeSprintId: true,
       spScaleItems: {
         orderBy: { value: "asc" },
@@ -50,6 +52,7 @@ export async function GET(
     taskCoefficient: project.taskCoefficient,
     estimationMethod: project.estimationMethod,
     workingHoursPerDay: project.workingHoursPerDay,
+    customValues: parseCustomShape(project.customShapeJson),
     activeSprintId: project.activeSprintId,
     spScale: project.spScaleItems,
     sprints: project.sprints.map((s) => ({
